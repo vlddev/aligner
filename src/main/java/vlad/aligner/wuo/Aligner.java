@@ -25,8 +25,12 @@
 
 package vlad.aligner.wuo;
 
-import java.util.Arrays;
-import java.util.Locale;
+import vlad.aligner.wuo.db.DAO;
+import vlad.aligner.wuo.db.DbTranslator;
+import vlad.util.IOUtil;
+
+import java.sql.Connection;
+import java.util.*;
 
 public class Aligner {
 
@@ -52,13 +56,13 @@ public class Aligner {
 				System.exit(1);
 			}
 			
-			ParallelCorpus.makeText(txt1, new Locale(lang1), txt2, new Locale(lang2));
+			makeText(txt1, new Locale(lang1), txt2, new Locale(lang2));
 		} else if (args.length == 3) {
 			String list = args[0];
 			String lang1 = args[1];
 			String lang2 = args[2];
 
-			ParallelCorpus.makeAll(list, new Locale(lang1), new Locale(lang2));
+			makeAll(list, new Locale(lang1), new Locale(lang2));
 		} else {
 			System.out.println("Usage: txt1 lang1 txt2 lang2");
 			System.out.println("\t or list lang1 lang2");
@@ -71,5 +75,129 @@ public class Aligner {
 //		new Locale("uk","UA"));
 		
 	}
+
+    public static void makeText(String sFile, Locale locFrom, String sTrFile, Locale locTo) throws Exception {
+        Date start = new Date();
+//		String dbUser = "root";
+//		String dbPwd = "root";
+//		String dbUrlTr = "jdbc:mysql://localhost/ua_de_dict?useUnicode=true&characterEncoding=UTF-8";
+//		String dbJdbcDriver = "com.mysql.jdbc.Driver";
+
+        String dbUser = System.getProperty("jdbc.user");
+        String dbPwd = System.getProperty("jdbc.password");
+        String dbUrlTr = System.getProperty("jdbc.url");
+        String dbJdbcDriver = System.getProperty("jdbc.driver");
+
+        Connection ceTr = DAO.getConnection(dbUser, dbPwd, dbUrlTr, dbJdbcDriver);
+        TranslatorInterface translator = new DbTranslator(ceTr);
+
+        List<String> errorList = translator.checkDB(locFrom, locTo);
+        if (errorList != null && errorList.size() > 0) {
+            for (String s : errorList) {
+                System.err.println(s);
+            }
+            System.err.println("ERROR: DB-inconsistencies detected.");
+            return;
+        }
+
+        //read text in first language
+        Corpus corp1 = new Corpus(IOUtil.getFileContent(sFile, "utf-8"));
+        corp1.setLang(locFrom); //new Locale("en","EN")
+        //read text in second language
+        Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
+        corp2.setLang(locTo); //new Locale("uk","UA")
+
+        ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
+
+        ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
+
+        //pc.dumpUsageStatsForWordsNotInDict(translator);
+
+        pc.makeMappingWithWordsUsedOnce(translator);
+
+        //dump for debugging
+        //pc.dumpMapping();
+
+        //store as XML
+        IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
+        //store as TMX
+        IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
+        //store as HTML
+        IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
+
+        long runTime = ((new Date()).getTime() - start.getTime())/1000;
+        System.out.println("=== Statistics ===");
+        System.out.println("Corpus 1: language - "+ corp1.getLang().getLanguage() +
+                ", sentences - " + corp1.getSentenceList().size());
+        System.out.println("Corpus 2: language - "+ corp2.getLang().getLanguage() +
+                ", sentences - " + corp2.getSentenceList().size());
+        System.out.println("Division points - "+ pc.getCorpusPairCount());
+        System.out.println("Done in "+ runTime + " sec.");
+
+    }
+
+    public static void makeAll(String listFile, Locale locFrom, Locale locTo) throws Exception {
+//		String dbUser = "root";
+//		String dbPwd = "root";
+//		String dbUrlTr = "jdbc:mysql://localhost/ua_de_dict?useUnicode=true&characterEncoding=UTF-8";
+//		String dbJdbcDriver = "com.mysql.jdbc.Driver";
+
+        String dbUser = System.getProperty("jdbc.user");
+        String dbPwd = System.getProperty("jdbc.password");
+        String dbUrlTr = System.getProperty("jdbc.url");
+        String dbJdbcDriver = System.getProperty("jdbc.driver");
+
+        Connection ceTr = DAO.getConnection(dbUser, dbPwd, dbUrlTr, dbJdbcDriver);
+        TranslatorInterface translator = new DbTranslator(ceTr);
+
+        List<String> errorList = translator.checkDB(locFrom, locTo);
+        if (errorList != null && errorList.size() > 0) {
+            for (String s : errorList) {
+                System.err.println(s);
+            }
+            System.err.println("ERROR: DB-inconsistencies detected.");
+            return;
+        }
+
+        Map<String, String> textMap = new HashMap<String, String>();
+        // read data to textMap
+        textMap = IOUtil.getFileContentAsMap(listFile, "utf-8", true, null, true);
+
+        String sTrFile;
+        for (String sFile : textMap.keySet()) {
+            System.out.println("Make text '"+ sFile + "'");
+            Date start = new Date();
+            sTrFile = textMap.get(sFile);
+            //read text in first language
+            Corpus corp1 = new Corpus(IOUtil.getFileContent(sFile,"utf-8"));
+            corp1.setLang(locFrom);
+            //read text in second language
+            Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
+            corp2.setLang(locTo);
+
+            //ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
+
+            ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
+
+            pc.makeMappingWithWordsUsedOnce(translator);
+
+            //store as XML
+            IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
+            //store as TMX
+            IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
+            //store as HTML
+            IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
+            long runTime = ((new Date()).getTime() - start.getTime())/1000;
+            System.out.println("=== Statistics ===");
+            System.out.println("Corpus 1: language - "+ corp1.getLang().getLanguage() +
+                    ", sentences - " + corp1.getSentenceList().size());
+            System.out.println("Corpus 2: language - "+ corp2.getLang().getLanguage() +
+                    ", sentences - " + corp2.getSentenceList().size());
+            System.out.println("Division points - "+ pc.getCorpusPairCount());
+            System.out.println("Done in "+ runTime + " sec.");
+        }
+
+        ceTr.close();
+    }
 
 }

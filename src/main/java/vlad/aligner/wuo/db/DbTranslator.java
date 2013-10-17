@@ -25,6 +25,7 @@
 
 package vlad.aligner.wuo.db;
 
+import vlad.aligner.wuo.TranslatorInterface;
 import vlad.aligner.wuo.Word;
 import vlad.aligner.wuo.WordForm;
 
@@ -106,7 +107,7 @@ public class DbTranslator implements TranslatorInterface {
 
     /** 
 	 * implementation of TranslatorInterface#getBaseForm
-	 * @see vlad.traslate.TranslatorInterface#getBaseForm(java.lang.String, java.util.Locale)
+	 * @see vlad.aligner.wuo.TranslatorInterface#getBaseForm(java.lang.String, java.util.Locale)
 	 */
 	public List<Word> getBaseForm(String wf, Locale lang) {
 		List<Word> ret = new ArrayList<Word>();
@@ -123,8 +124,8 @@ public class DbTranslator implements TranslatorInterface {
 		List<Word> ret = new ArrayList<Word>();
 		String sql = "select distinct inf.* from "+prefix+"wf wf, "+prefix+"inf inf"
 			+ " where wf.wf = ? and wf.fk_inf = inf.id ";
-		//MySql make case-insencitive search
-		//Case will be checkt in loop
+		//MySql make case-insensitive search
+		//Case will be checked in loop
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -206,7 +207,7 @@ public class DbTranslator implements TranslatorInterface {
 	
 	/**
 	 * implementation of TranslatorInterface#getTranslation
-	 * @see vlad.traslate.TranslatorInterface#getTranslation(List<Word>, java.util.Locale, java.util.Locale)
+	 * @see vlad.aligner.wuo.TranslatorInterface#getTranslation(java.util.List, java.util.Locale, java.util.Locale)
 	 */
 	public List<Word> getTranslation(
 		List<Word> wList,
@@ -224,8 +225,7 @@ public class DbTranslator implements TranslatorInterface {
 			ResultSet rs = null;
 			try {
 				ps = ce.prepareStatement(sql);
-				for (int i = 0; i < wList.size(); i++) {
-					Word w = wList.get(i);
+				for (Word w : wList) {
 					ps.clearParameters();
 					ps.setLong(1, w.getId());
 					rs = ps.executeQuery();
@@ -321,26 +321,24 @@ public class DbTranslator implements TranslatorInterface {
      * Get wordbases which used only once in text
      */
     public Map<String,String> getWordBasesUsedOnce(Locale langFrom, List<String> wfList) throws Exception {
-    	HashMap<String,String> ret = new HashMap<String,String>();
-    	HashSet<String> ignore = new HashSet<String>();
-    	String s = "";
-    	String wf;
+    	Map<String, String> ret = new HashMap<String,String>();
+    	Collection<String> ignore = new HashSet<String>();
+        String s = "";
     	List<Word> wordList;
-        for (int i = 0; i<wfList.size(); i++) {
-        	wf = wfList.get(i).toString();
+        for (String wf : wfList) {
         	wordList = getBaseForm(wf, langFrom);
         	String wfLower = wf.toLowerCase();
         	//search in lower case
         	if (!wfLower.equals(wf) && wordList.size() < 1) {
         		wordList = getBaseForm(wfLower, langFrom);
         	}
-        	Set<String> hs = new HashSet<String>();
+        	Collection<String> hs = new HashSet<String>();
         	// розглядати омоніми як одне слово
-        	for (int j = 0; j<wordList.size(); j++) {
-        		hs.add(wordList.get(j).getInf());
+        	for (Word base : wordList) {
+        		hs.add(base.getInf());
         	}
         	if (hs.size() == 1) {
-    			s = hs.iterator().next().toString();
+    			s = hs.iterator().next();
                 if(!s.equals("")) {
                 	if (!ignore.contains(s)) {
                     	if (ret.containsKey(s)) {

@@ -34,7 +34,7 @@ import java.util.*;
 public class Corpus {
 	
 	public static String LINE_SEPARATOR = System.getProperty("line.separator");
-	public static final String DEVIDER_CHARS = ".,:;!?§$%&/()=[]\\#+*<>{}\"—…«»“”•~^‹› \t\r\n";
+	public static final String DIVIDER_CHARS = ".,:;!?§$%&/()=[]\\#+*<>{}\"—…«»“”•~^‹› \t\r\n";
 	
 	public static final String[] EN_STOPWORDS = {
 		"a",
@@ -203,7 +203,7 @@ public class Corpus {
 				} else {
 					sCharAfter = text.substring(wPos+sWord.length(), wPos+sWord.length()+1);
 				}
-				if (DEVIDER_CHARS.indexOf(sCharBefore) > -1 && DEVIDER_CHARS.indexOf(sCharAfter) > -1) {
+				if (DIVIDER_CHARS.contains(sCharBefore) && DIVIDER_CHARS.contains(sCharAfter)) {
 					ret = wPos;
 				}
 			}
@@ -216,7 +216,7 @@ public class Corpus {
 		List<String> ret = new ArrayList<String>();
 		HashMap<String,Integer> mapWfUsedOnce = new HashMap<String,Integer>();
     	HashSet<String> ignore = new HashSet<String>();
-        StringTokenizer st = new StringTokenizer(text, DEVIDER_CHARS);
+        StringTokenizer st = new StringTokenizer(text, DIVIDER_CHARS);
         String s;
         int i = 0;
         while (st.hasMoreTokens()) {
@@ -249,7 +249,7 @@ public class Corpus {
 	
 	public CountHashtable<String> getWordUsageStats(boolean bIgnoreCase) {
 		CountHashtable<String> ret = new CountHashtable<String>();
-        StringTokenizer st = new StringTokenizer(text, DEVIDER_CHARS);
+        StringTokenizer st = new StringTokenizer(text, DIVIDER_CHARS);
         String s;
         while (st.hasMoreTokens()) {
             s = st.nextToken();

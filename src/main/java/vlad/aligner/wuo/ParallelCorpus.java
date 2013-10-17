@@ -25,14 +25,10 @@
 
 package vlad.aligner.wuo;
 
-import vlad.aligner.wuo.db.DAO;
-import vlad.aligner.wuo.db.DbTranslator;
-import vlad.aligner.wuo.db.TranslatorInterface;
 import vlad.util.IOUtil;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.Connection;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -45,7 +41,7 @@ public class ParallelCorpus {
 	private Corpus originalCorpus;
 	private Corpus translatedCorpus;
 	
-	//output channel for output of paralelization process information
+	//output channel for output of parallelization process information
 	private static PrintWriter protOut = null;
 	
 	/**
@@ -216,7 +212,7 @@ public class ParallelCorpus {
 				for (int i = 0; i < listWords1.size(); i++) {
 	
 					// find unique word with translation
-					sWord = listWords1.get(i).toString();
+					sWord = listWords1.get(i);
 					List<String> trList = new ArrayList<String>();
 					List<Word> tmpTrList = translator.getTranslation(sWord, originalCorpus.getLang(), translatedCorpus.getLang());
 					//convert to Vector of Strings
@@ -229,7 +225,7 @@ public class ParallelCorpus {
 					for (int j = 0; j<trList.size() && trCount < 2; j++ ) {
 						if (listWords2.contains(trList.get(j))) {
 							trCount++;
-							sWordTr = trList.get(j).toString();
+							sWordTr = trList.get(j);
 						}
 					}
 					if (trCount == 1) { //знайдено лише один переклад
@@ -237,7 +233,7 @@ public class ParallelCorpus {
 						sUniqueWord = (String)htBaseWf1.get(sWord);
 						sUniqueWordTr = (String)htBaseWf2.get(sWordTr);
 	
-						if (isAcceptablePositionOfDeviderWords(sUniqueWord, sUniqueWordTr, -1, -1)) {
+						if (isAcceptablePositionOfDividerWords(sUniqueWord, sUniqueWordTr, -1, -1)) {
 							//get sentences containing sUniqueWord and sUniqueWordTr
 							int indSent1 = originalCorpus.getIndexOfSentenceContainingWf(sUniqueWord, true);
 							int indSent2 = translatedCorpus.getIndexOfSentenceContainingWf(sUniqueWordTr, true);
@@ -387,7 +383,7 @@ public class ParallelCorpus {
 		} while (!bEnd);
 	}
 
-	private int getCorpusPairCount() {
+	public int getCorpusPairCount() {
 		return mapping.size() + 1;
 	}
 	
@@ -436,10 +432,10 @@ public class ParallelCorpus {
 	}
 	
 	
-	private boolean isAcceptablePositionOfDeviderWords(String word1, String word2, int startPos1, int startPos2) {
+	private boolean isAcceptablePositionOfDividerWords(String word1, String word2, int startPos1, int startPos2) {
 		boolean ret = true;
 		//Check position of word
-		//Characters before and after word should be deviders
+		//Characters before and after word should be dividers
 		int wPos1 = originalCorpus.getIndexOfWord(word1, startPos1);
 		double relPos1 = -1;
 		if (originalCorpus.getLength() > 0) {
@@ -949,131 +945,7 @@ public class ParallelCorpus {
 			this.splitWf2 = wf2;
 		}
 	}
-	
-	public static void makeText(String sFile, Locale locFrom, String sTrFile, Locale locTo) throws Exception {
-		Date start = new Date();
-//		String dbUser = "root";
-//		String dbPwd = "root";
-//		String dbUrlTr = "jdbc:mysql://localhost/ua_de_dict?useUnicode=true&characterEncoding=UTF-8";
-//		String dbJdbcDriver = "com.mysql.jdbc.Driver";
 
-		String dbUser = System.getProperty("jdbc.user");
-		String dbPwd = System.getProperty("jdbc.password");
-		String dbUrlTr = System.getProperty("jdbc.url");
-		String dbJdbcDriver = System.getProperty("jdbc.driver");
-
-		Connection ceTr = DAO.getConnection(dbUser, dbPwd, dbUrlTr, dbJdbcDriver);
-		TranslatorInterface translator = new DbTranslator(ceTr);
-		
-		List<String> errorList = translator.checkDB(locFrom, locTo);
-		if (errorList != null && errorList.size() > 0) {
-			for (String s : errorList) {
-				System.err.println(s);
-			}
-			System.err.println("ERROR: DB-inconsistences detected.");
-			return;
-		}
-		
-		//read text in first language
-		Corpus corp1 = new Corpus(IOUtil.getFileContent(sFile,"utf-8"));
-		corp1.setLang(locFrom); //new Locale("en","EN")
-		//read text in second language
-		Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
-		corp2.setLang(locTo); //new Locale("uk","UA")
-
-		ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
-
-		ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
-		
-		//pc.dumpUsageStatsForWordsNotInDict(translator);
-
-		pc.makeMappingWithWordsUsedOnce(translator);
-		
-		//dump for debugging
-		//pc.dumpMapping();
-		
-		//store as XML
-		IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
-		//store as TMX
-		IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
-		//store as HTML
-		IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
-		
-		long runTime = ((new Date()).getTime() - start.getTime())/1000; 
-		System.out.println("=== Statistics ===");
-		System.out.println("Corpus 1: language - "+ corp1.getLang().getLanguage() +
-				", sentences - " + corp1.getSentenceList().size());
-		System.out.println("Corpus 2: language - "+ corp2.getLang().getLanguage() +
-				", sentences - " + corp2.getSentenceList().size());
-		System.out.println("Division points - "+ pc.getCorpusPairCount());
-		System.out.println("Done in "+ runTime + " sec.");
-		
-	}
-	
-	public static void makeAll(String listFile, Locale locFrom, Locale locTo) throws Exception {
-//		String dbUser = "root";
-//		String dbPwd = "root";
-//		String dbUrlTr = "jdbc:mysql://localhost/ua_de_dict?useUnicode=true&characterEncoding=UTF-8";
-//		String dbJdbcDriver = "com.mysql.jdbc.Driver";
-
-		String dbUser = System.getProperty("jdbc.user");
-		String dbPwd = System.getProperty("jdbc.password");
-		String dbUrlTr = System.getProperty("jdbc.url");
-		String dbJdbcDriver = System.getProperty("jdbc.driver");
-
-		Connection ceTr = DAO.getConnection(dbUser, dbPwd, dbUrlTr, dbJdbcDriver);
-		TranslatorInterface translator = new DbTranslator(ceTr);
-		
-		List<String> errorList = translator.checkDB(locFrom, locTo);
-		if (errorList != null && errorList.size() > 0) {
-			for (String s : errorList) {
-				System.err.println(s);
-			}
-			System.err.println("ERROR: DB-inconsistences detected.");
-			return;
-		}
-		
-		Map<String, String> textMap = new HashMap<String, String>();
-		// read data to textMap
-		textMap = IOUtil.getFileContentAsMap(listFile, "utf-8", true, null, true);
-		
-		String sTrFile;
-		for (String sFile : textMap.keySet()) {
-			System.out.println("Make text '"+ sFile + "'");
-			Date start = new Date();
-			sTrFile = textMap.get(sFile);
-			//read text in first language
-			Corpus corp1 = new Corpus(IOUtil.getFileContent(sFile,"utf-8"));
-			corp1.setLang(locFrom);
-			//read text in second language
-			Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
-			corp2.setLang(locTo);
-
-			//ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
-			
-			ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
-
-			pc.makeMappingWithWordsUsedOnce(translator);
-			
-			//store as XML
-			IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
-			//store as TMX
-			IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
-			//store as HTML
-			IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
-			long runTime = ((new Date()).getTime() - start.getTime())/1000; 
-			System.out.println("=== Statistics ===");
-			System.out.println("Corpus 1: language - "+ corp1.getLang().getLanguage() +
-					", sentences - " + corp1.getSentenceList().size());
-			System.out.println("Corpus 2: language - "+ corp2.getLang().getLanguage() +
-					", sentences - " + corp2.getSentenceList().size());
-			System.out.println("Division points - "+ pc.getCorpusPairCount());
-			System.out.println("Done in "+ runTime + " sec.");
-		}
-		
-		ceTr.close();
-	}
-	
 	protected Map<Integer,SplitPoint> getMapping() {
 		return mapping;
 	}

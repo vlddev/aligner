@@ -23,10 +23,7 @@
 #######################################################################
 */
 
-package vlad.aligner.wuo.db;
-
-import vlad.aligner.wuo.Word;
-import vlad.aligner.wuo.WordForm;
+package vlad.aligner.wuo;
 
 import java.util.List;
 import java.util.Locale;

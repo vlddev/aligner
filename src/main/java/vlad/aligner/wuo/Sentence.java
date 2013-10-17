@@ -38,7 +38,7 @@ public class Sentence {
 	private Locale lang;
 	private List<String> elemList = new ArrayList<String>();
 	private List<String> elemListLoverCase = new ArrayList<String>();
-	private List<String> deviderList = new ArrayList<String>();
+	private List<String> dividerList = new ArrayList<String>();
 	
 	public Sentence(String text) {
 		content = text;
@@ -47,7 +47,7 @@ public class Sentence {
 	}
 
 	private void init() {
-		StringTokenizer fIn = new StringTokenizer(content, Corpus.DEVIDER_CHARS);
+		StringTokenizer fIn = new StringTokenizer(content, Corpus.DIVIDER_CHARS);
 		if(fIn.hasMoreTokens()) {
 			String strWord = "";
 			do {
@@ -68,7 +68,7 @@ public class Sentence {
 			elemListLoverCase.add(s.toLowerCase());
 		}
 		contentLoverCase = content.toLowerCase();
-		//TODO init deviders!!!
+		//TODO init dividers!!!
 	}
 	
 	public String getNormalized() {
@@ -95,7 +95,7 @@ public class Sentence {
 		String sChar;
 		while(sb.length() > 0) {
 			sChar = sb.substring(0, 1);
-			if (Corpus.DEVIDER_CHARS.indexOf(sChar) > -1 ) {
+			if (Corpus.DIVIDER_CHARS.indexOf(sChar) > -1 ) {
 				sb.deleteCharAt(0);
 			} else {
 				break;
@@ -103,7 +103,7 @@ public class Sentence {
 		}
 		while(sb.length() > 0) {
 			sChar = sb.substring(sb.length()-1);
-			if (Corpus.DEVIDER_CHARS.indexOf(sChar) > -1 ) {
+			if (Corpus.DIVIDER_CHARS.indexOf(sChar) > -1 ) {
 				sb.deleteCharAt(sb.length()-1);
 			} else {
 				break;
@@ -174,7 +174,7 @@ public class Sentence {
 					} else {
 						sCharAfter = contentLoverCase.substring(wPos+word.length(), wPos+word.length()+1);
 					}
-					if (Corpus.DEVIDER_CHARS.indexOf(sCharBefore) > -1 && Corpus.DEVIDER_CHARS.indexOf(sCharAfter) > -1) {
+					if (Corpus.DIVIDER_CHARS.indexOf(sCharBefore) > -1 && Corpus.DIVIDER_CHARS.indexOf(sCharAfter) > -1) {
 						resPos = wPos;
 					}
 				}

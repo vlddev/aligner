@@ -44,7 +44,7 @@ public class IOUtil {
     }
 
     public static String getFileContent(String file, String encoding) throws IOException{
-        StringBuffer ret = new StringBuffer();
+        StringBuilder ret = new StringBuilder();
         String ln = System.getProperty("line.separator");
 		BufferedReader fIn = new BufferedReader(new InputStreamReader(
 					new FileInputStream(file), encoding)
@@ -138,8 +138,7 @@ public class IOUtil {
     }
 
 	public static void storeString(String file, String encoding, String content) throws IOException{
-		PrintWriter pw = new PrintWriter(
-			new OutputStreamWriter(new FileOutputStream(file),encoding),true);
+		PrintWriter pw = openFile(file, encoding);
 		pw.print(content);
 		pw.flush();
 		pw.close();

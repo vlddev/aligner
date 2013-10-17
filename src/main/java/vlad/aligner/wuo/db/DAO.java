@@ -61,7 +61,7 @@ public class DAO {
      * Closes the SQL Statement and handles null check and exception handling.
      * @param statement The Statement to close.
      */
-    public final static void closeStatement(final Statement statement) {
+    public static void closeStatement(final Statement statement) {
         try {
             if (statement != null) {
                 statement.close();
@@ -75,7 +75,7 @@ public class DAO {
      * Closes the ResultSet and handles null check and exception handling.
      * @param resultSet The ResultSet to close
      */
-    public final static void closeResultSet(ResultSet resultSet) {
+    public static void closeResultSet(ResultSet resultSet) {
         try {
             if (resultSet != null) {
                 resultSet.close();
@@ -85,7 +85,7 @@ public class DAO {
         }
     }
 
-    public final static void closeConnection(final Connection con) {
+    public static void closeConnection(final Connection con) {
         try {
             if (con != null) {
                 if (!con.getAutoCommit())
@@ -97,7 +97,7 @@ public class DAO {
         }
     }
 
-    public final static void rollback(final Connection con) {
+    public static void rollback(final Connection con) {
         if (con == null) {
             return;
         }

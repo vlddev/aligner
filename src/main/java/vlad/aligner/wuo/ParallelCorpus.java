@@ -40,6 +40,7 @@ public class ParallelCorpus {
 
 	private Corpus originalCorpus;
 	private Corpus translatedCorpus;
+    private String name;
 	
 	//output channel for output of parallelization process information
 	private static PrintWriter protOut = null;
@@ -56,7 +57,7 @@ public class ParallelCorpus {
 	 * !!!! Зміна цього поля повинна відбуватися лише в методах: 
 	 *    addSplitPointToMapping()
 	 */
-	private TreeMap<Integer,SplitPoint> mapping = new TreeMap<Integer,SplitPoint>();
+	private Map<Integer,SplitPoint> mapping = new TreeMap<Integer,SplitPoint>();
 	
 	/**
 	 * Містить додаткові дані про входження речень з translatedCorpus в 
@@ -66,7 +67,7 @@ public class ParallelCorpus {
 	 *!!!! Зміна цього поля повинна відбуватися лише в методах класу.
 	 *    addSplitPointToMapping()
 	 */
-	private TreeMap<Integer,Integer> reverseMapping = new TreeMap<Integer,Integer>();
+	private Map<Integer,Integer> reverseMapping = new TreeMap<Integer,Integer>();
 
 	public ParallelCorpus(Corpus original, Corpus translation) {
 		originalCorpus = original;
@@ -127,7 +128,7 @@ public class ParallelCorpus {
 					return;
 				}
 				// remove all stop-words
-				for (String sStopword : Corpus.LIST_EN_STOPWORDS) {
+				for (String sStopword : StopWords.getStopwords(originalCorpus.getLang())) {
 					htBaseWf1.remove(sStopword);
 				}
 				
@@ -147,7 +148,7 @@ public class ParallelCorpus {
 				}
 				
 				// remove all stop-words
-				for (String sStopword : Corpus.LIST_UK_STOPWORDS) {
+				for (String sStopword : StopWords.getStopwords(translatedCorpus.getLang())) {
 					htBaseWf2.remove(sStopword);
 				}
 
@@ -201,28 +202,27 @@ public class ParallelCorpus {
 	//					IOUtil.storeVector(getOutDir()+"good_tr_map.txt", "utf-8", trGoodPairList);
 	//				}
 				
-				String sWord = "";
 				String sWordTr = "";
 				String sUniqueWord = "";
 				String sUniqueWordTr = "";
-				int lastIndSent2 = -1;
+                int lastIndSent1 = -1;
+                int lastIndSent2 = -1;
 				int trCount = 0;
 
 				//ToDo надавати перевагу іменникам, дієсловам та прикметникам, а вже потім решту слів 
-				for (int i = 0; i < listWords1.size(); i++) {
+				for (String sWord : listWords1) {
 	
 					// find unique word with translation
-					sWord = listWords1.get(i);
 					List<String> trList = new ArrayList<String>();
 					List<Word> tmpTrList = translator.getTranslation(sWord, originalCorpus.getLang(), translatedCorpus.getLang());
-					//convert to Vector of Strings
-					for (int j = 0; j<tmpTrList.size(); j++) {
-						trList.add(tmpTrList.get(j).getInf());
+					//convert to List of Strings
+					for (Word w : tmpTrList) {
+						trList.add(w.getInf());
 					}
 					//check if intersection of trList with vWords2 
 					//contains only one element and store it in sWordTr.
 					trCount = 0;
-					for (int j = 0; j<trList.size() && trCount < 2; j++ ) {
+					for (int j = 0; j < trList.size() && trCount < 2; j++ ) {
 						if (listWords2.contains(trList.get(j))) {
 							trCount++;
 							sWordTr = trList.get(j);
@@ -230,8 +230,8 @@ public class ParallelCorpus {
 					}
 					if (trCount == 1) { //знайдено лише один переклад
 						//get wordform for wordbase sWord
-						sUniqueWord = (String)htBaseWf1.get(sWord);
-						sUniqueWordTr = (String)htBaseWf2.get(sWordTr);
+						sUniqueWord = htBaseWf1.get(sWord);
+						sUniqueWordTr = htBaseWf2.get(sWordTr);
 	
 						if (isAcceptablePositionOfDividerWords(sUniqueWord, sUniqueWordTr, -1, -1)) {
 							//get sentences containing sUniqueWord and sUniqueWordTr
@@ -269,14 +269,29 @@ public class ParallelCorpus {
 	//								}
 	//							}
 							//додати нову точки поділу
-							if (indSent2 > lastIndSent2) {
+							if (indSent2 > lastIndSent2 && indSent1 > lastIndSent1 ) {
 								// кожне речення може використовуватися для поділу лише раз
-								SplitPoint sp = new SplitPoint(indSent1, indSent2, sUniqueWord, sUniqueWordTr);
-								newMapping.put(indSent1, sp);
-							}
+
+                                // відстань до точок попереднього поділу не має бути надто великою
+                                if (Math.abs(indSent1 - lastIndSent1) < Math.abs(indSent2 - lastIndSent2) * 10
+                                        && Math.abs(indSent2 - lastIndSent2) < Math.abs(indSent1 - lastIndSent1) * 10) {
+                                    SplitPoint sp = new SplitPoint(indSent1, indSent2, sUniqueWord, sUniqueWordTr);
+                                    newMapping.put(indSent1, sp);
+                                    lastIndSent1 = indSent1;
+                                    lastIndSent2 = indSent2;
+                                } else {
+                                    if (protOut != null) {
+                                        protOut.println("Split point ("+indSent1+", "+indSent2+") ignored. Too far from previous split point: ("+lastIndSent1+", "+lastIndSent2+")");
+                                    }
+
+                                }
+							} else {
+                                if (protOut != null) {
+                                    protOut.println("Split point ("+indSent1+", "+indSent2+") ignored. Conflict with previous split point: ("+lastIndSent1+", "+lastIndSent2+")");
+                                }
+                            }
 							
-							lastIndSent2 = indSent2;
-	
+
 	//							//protocoll
 	//							if (isProtocol()) {
 	//								protOut.println("Sentence1: "+vText1.get(1));
@@ -344,12 +359,19 @@ public class ParallelCorpus {
 			} else { //текст вже має поділ - робимо розбиття частин тексту
 				// recursion
 				List<ParallelCorpus> pcList = new ArrayList<ParallelCorpus>();
+                //dumpMapping();
 				for (int i = 0; i < subCorpusCount; i++) {
 					ParallelCorpus pc = getCorpusPairAt(i);
-					if (pc != null && pc.getOriginalCorpus().getSentenceList().size() > 0 &&
+                    if (pc != null && pc.getOriginalCorpus().getSentenceList().size() > 0 &&
 							pc.getTranslatedCorpus().getSentenceList().size() > 0 &&
 							(pc.getOriginalCorpus().getSentenceList().size() > 1 ||
 							pc.getTranslatedCorpus().getSentenceList().size() > 1)) {
+                        pc.setName(this.getName()+"_"+i);
+//                        try {
+//                            IOUtil.storeString("/home/vlad/imex/test/"+pc.getName()+".par.html", "utf-8", pc.getAsParHTML());
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
 						//обидва тексти пари непорожні і хоча б один текст має більше одного речення
 						//(немає сенсу шукати відповідність якщо кожен текст містить одне речення) 
 						pc.makeMappingWithWordsUsedOnce(translator);
@@ -391,8 +413,8 @@ public class ParallelCorpus {
 		Corpus corp1 = null;
 		Corpus corp2 = null;
 		
-		SplitPoint spBegin;
-		SplitPoint spEnd;
+		SplitPoint spBegin = null;
+		SplitPoint spEnd = null;
 		int corp1Begin = 0, corp1End = 0, corp2Begin = 0, corp2End = 0;
 		if (mapping.size() >= pos) {
 			List<Integer> lst = new ArrayList<Integer>(mapping.keySet());
@@ -418,6 +440,12 @@ public class ParallelCorpus {
 			}
 			if (corp1Begin > corp1End || corp2Begin > corp2End ) {
 				//TODO check
+                //protocol
+                if (protOut != null) {
+                    protOut.println("Not valid corpus pair: corp1 ("+corp1Begin+", "+corp1End+") corp2 ("+corp2Begin+", "+corp2End+"");
+                    if (spBegin != null) protOut.println("\t Split point begin: "+spBegin.toString());
+                    if (spEnd != null) protOut.println("\t Split point end: "+spEnd.toString());
+                }
 				return null;
 			} else {
 				corp1 = new Corpus(originalCorpus.getSentenceList().subList(corp1Begin, corp1End));
@@ -533,7 +561,7 @@ public class ParallelCorpus {
 		PrintWriter out = null;
 		try {
 			out = IOUtil.openFile("dump_map.txt", "utf-8");
-			SplitPoint splitPoint = null;
+			SplitPoint splitPoint;
 			for (Integer ind: mapping.keySet()) {
 				splitPoint = mapping.get(ind);
 				out.println(ind.toString()+"; "+splitPoint.sentenceIndCorpus2 + "\t" + 
@@ -580,7 +608,7 @@ public class ParallelCorpus {
 	}
 	
 	public String getAsParXML() {
-		StringBuffer ret = new StringBuffer();
+		StringBuilder ret = new StringBuilder();
 		SplitPoint prevSplitPoint = null;
 		SplitPoint splitPoint = null;
 		int indFrom1, indFrom2, indTo1, indTo2;
@@ -662,7 +690,7 @@ public class ParallelCorpus {
     public String makeValidXML(String plaintext)
     {
         char c;
-        StringBuffer out = new StringBuffer();
+        StringBuilder out = new StringBuilder();
         String text = fixChars(plaintext);
         for (int i=0; i<text.length(); i++)
         {
@@ -722,7 +750,7 @@ public class ParallelCorpus {
     }    
     
 	public String getAsTMX() {
-		StringBuffer ret = new StringBuffer();
+		StringBuilder ret = new StringBuilder();
 		SplitPoint prevSplitPoint = null;
 		SplitPoint splitPoint = null;
 		int indFrom1, indFrom2, indTo1, indTo2;
@@ -926,7 +954,29 @@ public class ParallelCorpus {
 				ret.append("</td></tr>");
 				ret.append(IOUtil.ln);
 			}
-		}
+		} else { //no split points
+            indTo1 = originalCorpus.getSentenceList().size();
+            indTo2 = translatedCorpus.getSentenceList().size();
+
+            if (indTo1 > 0 || indTo2 > 0) {
+                //додати блок текст-переклад якщо хоча б одна з частин непорожня
+                ret.append("<tr><td>");
+                for (int i = 0; i < indTo1; i++) {
+                    ret.append(originalCorpus.getSentenceList().get(i).getContent());
+                    ret.append(IOUtil.ln);
+                }
+                ret.append("</td>");
+                ret.append(IOUtil.ln);
+
+                ret.append("<td>");
+                for (int i = 0; i < indTo2; i++) {
+                    ret.append(translatedCorpus.getSentenceList().get(i).getContent());
+                    ret.append(IOUtil.ln);
+                }
+                ret.append("</td></tr>");
+                ret.append(IOUtil.ln);
+            }
+        }
 		ret.append("</table></body></html>");
 		
 		return ret.toString();
@@ -944,6 +994,10 @@ public class ParallelCorpus {
 			this.splitWf1 = wf1;
 			this.splitWf2 = wf2;
 		}
+
+        public String toString() {
+            return "text1: (sent="+sentenceIndCorpus1+" ; word="+splitWf1+") test2 (sent="+sentenceIndCorpus2+" ; word="+splitWf2+")";
+        }
 	}
 
 	protected Map<Integer,SplitPoint> getMapping() {
@@ -961,4 +1015,12 @@ public class ParallelCorpus {
 	public static void setProtOut(PrintWriter pw) {
 		protOut = pw;
 	}
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }

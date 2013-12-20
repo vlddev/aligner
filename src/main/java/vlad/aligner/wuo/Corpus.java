@@ -36,58 +36,6 @@ public class Corpus {
 	public static String LINE_SEPARATOR = System.getProperty("line.separator");
 	public static final String DIVIDER_CHARS = ".,:;!?§$%&/()=[]\\#+*<>{}\"—…«»“”•~^‹› \t\r\n";
 	
-	public static final String[] EN_STOPWORDS = {
-		"a",
-		"about",
-		"an",
-		"and",
-		"are",
-		"as",
-		"at",
-		"be",
-		"but",
-		"by",
-		"for",
-		"from",
-		"how",
-		"i",
-		"if",
-		"in",
-		"into",
-		"is",
-		"it",
-		"of",
-		"on",
-		"or",
-		"no",
-		"not",
-		"that",
-		"the",
-		"this",
-		"to",
-		"was",
-		"what",
-		"when",
-		"where",
-		"who",
-		"will",
-		"with"};
-	
-	public static final String[] UK_STOPWORDS = {
-		"а",
-		"б",
-		"від",
-		"за",
-		"на",
-		"он",
-		"от",
-		"по",
-		"що"
-		};
-
-	public static final List<String> LIST_EN_STOPWORDS = new ArrayList<String>(Arrays.asList(EN_STOPWORDS));
-	public static final List<String> LIST_UK_STOPWORDS = new ArrayList<String>(Arrays.asList(UK_STOPWORDS));
-
 	private int startPosInParentCorpus = -1;
 	private Locale lang;
 	private String text;
@@ -102,7 +50,7 @@ public class Corpus {
 		this.sentenceList = sentenceList;
 		
 		//TODO можливо, краще брати частину оригінального тексту, а не реконструювати його 
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (Sentence sent : sentenceList) {
 			sb.append(sent.getContent());
 			sb.append(" ");

@@ -110,6 +110,7 @@ public class Aligner {
         ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
 
         ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
+        pc.setName("test");
 
         //pc.dumpUsageStatsForWordsNotInDict(translator);
 
@@ -178,6 +179,7 @@ public class Aligner {
             //ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
 
             ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
+            pc.setName("test");
 
             pc.makeMappingWithWordsUsedOnce(translator);
 

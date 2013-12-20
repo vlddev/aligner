@@ -34,7 +34,7 @@ public class Sentence {
 
 	private int startPosInText = 0;
 	private String content;
-	private String contentLoverCase;
+	private String contentLowerCase;
 	private Locale lang;
 	private List<String> elemList = new ArrayList<String>();
 	private List<String> elemListLoverCase = new ArrayList<String>();
@@ -67,12 +67,12 @@ public class Sentence {
 		for (String s : elemList) {
 			elemListLoverCase.add(s.toLowerCase());
 		}
-		contentLoverCase = content.toLowerCase();
+		contentLowerCase = content.toLowerCase();
 		//TODO init dividers!!!
 	}
 	
 	public String getNormalized() {
-		StringBuffer sb = new StringBuffer(contentLoverCase);
+		StringBuffer sb = new StringBuffer(contentLowerCase);
 
 		// remove first BOM in utf8
 		if (sb.length() > 0) {
@@ -116,7 +116,7 @@ public class Sentence {
 		boolean ret = false;
 		if (ignoreCase) {
 			String wfLoverCase = wf.toLowerCase();
-			if (contentLoverCase.indexOf(wfLoverCase) > -1) {
+			if (contentLowerCase.indexOf(wfLoverCase) > -1) {
 				ret = elemListLoverCase.contains(wfLoverCase);
 			}
 		} else {
@@ -131,7 +131,7 @@ public class Sentence {
 		int ret = -1;
 		if (ignoreCase) {
 			String wfLoverCase = wf.toLowerCase();
-			if (contentLoverCase.indexOf(wfLoverCase) > -1) {
+			if (contentLowerCase.indexOf(wfLoverCase) > -1) {
 				ret = elemListLoverCase.indexOf(wfLoverCase);
 			}
 		} else {
@@ -150,10 +150,10 @@ public class Sentence {
 	public String getContentWithMarkedWord(String word) {
 		String wordLoverCase = word.toLowerCase();
 		StringBuffer sb = new StringBuffer(content);
-		if (contentLoverCase.indexOf(wordLoverCase) == contentLoverCase.lastIndexOf(wordLoverCase)) {
+		if (contentLowerCase.indexOf(wordLoverCase) == contentLowerCase.lastIndexOf(wordLoverCase)) {
 			//слово зустрічається лише раз
-			sb.insert(contentLoverCase.indexOf(wordLoverCase) + word.length(), "</b>");
-			sb.insert(contentLoverCase.indexOf(wordLoverCase), "<b>");
+			sb.insert(contentLowerCase.indexOf(wordLoverCase) + word.length(), "</b>");
+			sb.insert(contentLowerCase.indexOf(wordLoverCase), "<b>");
 		} else {
 			// слово зустрічається декілька раз, потрібно виділити переше повне слово (а не частину слова)
 			
@@ -162,17 +162,17 @@ public class Sentence {
 			String sCharBefore;
 			String sCharAfter;
 			do {
-				wPos = contentLoverCase.indexOf(wordLoverCase, wPos+1);
+				wPos = contentLowerCase.indexOf(wordLoverCase, wPos+1);
 				if (wPos > -1) {
 					if (wPos == 0) { //first word in text
 						sCharBefore = " ";
 					} else {
-						sCharBefore = contentLoverCase.substring(wPos-1, wPos);
+						sCharBefore = contentLowerCase.substring(wPos-1, wPos);
 					}
-					if (wPos+word.length() == contentLoverCase.length()) { //last word in text
+					if (wPos+word.length() == contentLowerCase.length()) { //last word in text
 						sCharAfter = " ";
 					} else {
-						sCharAfter = contentLoverCase.substring(wPos+word.length(), wPos+word.length()+1);
+						sCharAfter = contentLowerCase.substring(wPos+word.length(), wPos+word.length()+1);
 					}
 					if (Corpus.DIVIDER_CHARS.indexOf(sCharBefore) > -1 && Corpus.DIVIDER_CHARS.indexOf(sCharAfter) > -1) {
 						resPos = wPos;

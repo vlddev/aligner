@@ -29,6 +29,7 @@ import vlad.aligner.wuo.db.DAO;
 import vlad.aligner.wuo.db.DbTranslator;
 import vlad.util.IOUtil;
 
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.util.*;
 
@@ -75,6 +76,55 @@ public class Aligner {
 //		new Locale("uk","UA"));
 		
 	}
+
+    public static String alignTextsAsHtmlTable(String sTextFrom, Locale locFrom, String sTextTo, Locale locTo, Connection c) throws Exception {
+        return alignTexts(sTextFrom, locFrom, sTextTo, locTo, c).getAsHtmlTable();
+    }
+
+    public static List<List<String>> alignTextsAsDoubleList(String sTextFrom, Locale locFrom, String sTextTo, Locale locTo, Connection c) throws Exception {
+        return alignTexts(sTextFrom, locFrom, sTextTo, locTo, c).getAsDoubleList(true);
+    }
+
+    public static ParallelCorpus alignTexts(String sTextFrom, Locale locFrom, String sTextTo, Locale locTo, Connection c) throws Exception {
+        Date start = new Date();
+        TranslatorInterface translator = new DbTranslator(c);
+
+        List<String> errorList = translator.checkDB(locFrom, locTo);
+        if (errorList != null && errorList.size() > 0) {
+            for (String s : errorList) {
+                System.err.println(s);
+            }
+            System.err.println("ERROR: DB-inconsistencies detected.");
+            throw new Exception("ERROR: DB-inconsistencies detected.");
+        }
+
+        //read text in first language
+        Corpus corp1 = new Corpus(sTextFrom);
+        corp1.setLang(locFrom); //new Locale("en","EN")
+        //read text in second language
+        Corpus corp2 = new Corpus(sTextTo);
+        corp2.setLang(locTo); //new Locale("uk","UA")
+
+        //
+        ParallelCorpus.setProtOut(new PrintWriter(System.out));
+
+        ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
+        pc.setName("test");
+
+        pc.makeMappingWithWordsUsedOnce(translator);
+
+        long runTime = ((new Date()).getTime() - start.getTime())/1000;
+        System.out.println("=== Statistics ===");
+        System.out.println("Corpus 1: language - "+ corp1.getLang().getLanguage() +
+                ", sentences - " + corp1.getSentenceList().size());
+        System.out.println("Corpus 2: language - "+ corp2.getLang().getLanguage() +
+                ", sentences - " + corp2.getSentenceList().size());
+        System.out.println("Division points - "+ pc.getCorpusPairCount());
+        System.out.println("Done in "+ runTime + " sec.");
+
+        return pc;
+    }
+
 
     public static void makeText(String sFile, Locale locFrom, String sTrFile, Locale locTo) throws Exception {
         Date start = new Date();

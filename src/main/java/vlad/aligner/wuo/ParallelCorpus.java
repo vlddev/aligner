@@ -776,103 +776,34 @@ public class ParallelCorpus {
         ret.append("  </header>").append(IOUtil.ln);
         ret.append("  <body>").append(IOUtil.ln);
 
-	    String str;
-		for (Integer ind: mapping.keySet()) {
-			splitPoint = mapping.get(ind);
-			indFrom1 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus1+1;
-			indTo1 = splitPoint.sentenceIndCorpus1;
+        for (List<String> pairList : getAsDoubleList(false)) {
+            ret.append("<tu>").append(IOUtil.ln);
+            ret.append(" <tuv " + langAttr + "=\"" + langFrom + "\">").append(IOUtil.ln);
+            ret.append("  <seg>");
+            String val = "";
+            if (pairList != null && pairList.size() > 0) {
+                val = pairList.get(0);
+            }
+            val = tagPattern.matcher(val).replaceAll("");
+            val = makeValidXML(val);
+            ret.append(val).append(IOUtil.ln);
+            ret.append("  </seg>").append(IOUtil.ln);
+            ret.append(" </tuv>").append(IOUtil.ln);
 
-			indFrom2 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus2+1;
-			indTo2 = splitPoint.sentenceIndCorpus2;
-
-			if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-				//додати блок текст-переклад якщо хоча б одна з частин непорожня
-				ret.append("<tu>").append(IOUtil.ln);
-				ret.append(" <tuv " + langAttr + "=\"" + langFrom + "\">")
-					.append(IOUtil.ln);
-				ret.append("  <seg>");
-				for (int i = indFrom1; i < indTo1; i++) {
-					str = originalCorpus.getSentenceList().get(i).getContent();
-					str = tagPattern.matcher(str).replaceAll("");
-					str = makeValidXML(str);
-					ret.append(str).append(IOUtil.ln);
-				}
-				ret.append("  </seg>").append(IOUtil.ln);
-				ret.append(" </tuv>").append(IOUtil.ln);
-
-				ret.append(" <tuv " + langAttr + "=\"" + langTo + "\">")
-					.append(IOUtil.ln);
-				ret.append("  <seg>");
-				for (int i = indFrom2; i < indTo2; i++) {
-					str = translatedCorpus.getSentenceList().get(i).getContent();
-					str = tagPattern.matcher(str).replaceAll("");
-					str = makeValidXML(str);
-					ret.append(str).append(IOUtil.ln);
-				}
-				ret.append("  </seg>").append(IOUtil.ln);
-				ret.append(" </tuv>").append(IOUtil.ln);
-				ret.append("</tu>").append(IOUtil.ln);
-			}
-
-			ret.append("<tu>").append(IOUtil.ln);
-			ret.append(" <tuv " + langAttr + "=\"" + langFrom + "\">")
-				.append(IOUtil.ln);
-			str = originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContent();
-			str = tagPattern.matcher(str).replaceAll("");
-			str = makeValidXML(str);
-			ret.append("  <seg>").append(str).append("</seg>")
-				.append(IOUtil.ln);
-			ret.append(" </tuv>").append(IOUtil.ln);
-
-			ret.append(" <tuv " + langAttr + "=\"" + langTo + "\">")
-				.append(IOUtil.ln);
-			str = translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContent();
-			str = tagPattern.matcher(str).replaceAll("");
-			str = makeValidXML(str);
-			ret.append("  <seg>").append(str).append("</seg>")
-				.append(IOUtil.ln);
-			ret.append(" </tuv>").append(IOUtil.ln);
-			ret.append("</tu>").append(IOUtil.ln);
-			
-			prevSplitPoint = splitPoint;
-		}
-		//add last text
-		if (splitPoint != null) {
-			indFrom1 = splitPoint.sentenceIndCorpus1+1;
-			indTo1 = originalCorpus.getSentenceList().size();
-
-			indFrom2 = splitPoint.sentenceIndCorpus2+1;
-			indTo2 = translatedCorpus.getSentenceList().size();
-
-			if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-				//додати блок текст-переклад якщо хоча б одна з частин непорожня
-				ret.append("<tu>").append(IOUtil.ln);
-				ret.append(" <tuv " + langAttr + "=\"" + langFrom + "\">")
-					.append(IOUtil.ln);
-				ret.append("  <seg>");
-				for (int i = indFrom1; i < indTo1; i++) {
-					str = originalCorpus.getSentenceList().get(i).getContent();
-					str = tagPattern.matcher(str).replaceAll("");
-					str = makeValidXML(str);
-					ret.append(str).append(IOUtil.ln);
-				}
-				ret.append("  </seg>").append(IOUtil.ln);
-				ret.append(" </tuv>").append(IOUtil.ln);
-
-				ret.append(" <tuv " + langAttr + "=\"" + langTo + "\">")
-					.append(IOUtil.ln);
-				ret.append("  <seg>");
-				for (int i = indFrom2; i < indTo2; i++) {
-					str = translatedCorpus.getSentenceList().get(i).getContent();
-					str = tagPattern.matcher(str).replaceAll("");
-					str = makeValidXML(str);
-					ret.append(str).append(IOUtil.ln);
-				}
-				ret.append("  </seg>").append(IOUtil.ln);
-				ret.append(" </tuv>").append(IOUtil.ln);
-				ret.append("</tu>").append(IOUtil.ln);
-			}
-		}
+            ret.append(" <tuv " + langAttr + "=\"" + langTo + "\">").append(IOUtil.ln);
+            ret.append("  <seg>");
+            val = "";
+            if (pairList != null && pairList.size() > 1) {
+                val = pairList.get(1);
+            }
+            val = tagPattern.matcher(val).replaceAll("");
+            val = makeValidXML(val);
+            ret.append(val).append(IOUtil.ln);
+            ret.append("  </seg>").append(IOUtil.ln);
+            ret.append(" </tuv>").append(IOUtil.ln);
+            ret.append("</tu>").append(IOUtil.ln);
+            ret.append(IOUtil.ln);
+        }
 
         ret.append("  </body>").append(IOUtil.ln);
         ret.append("</tmx>");
@@ -880,107 +811,152 @@ public class ParallelCorpus {
 		return ret.toString();
 	}
 
-	public String getAsParHTML() {
+    public String getAsParHTML() {
+        StringBuffer ret = new StringBuffer();
+        ret.append("<html><body>");
+        ret.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
+        ret.append(getAsHtmlTable());
+        ret.append("</body></html>");
+        return ret.toString();
+    }
+
+    public String getAsHtmlTable() {
 		StringBuffer ret = new StringBuffer();
-		SplitPoint prevSplitPoint = null;
-		SplitPoint splitPoint = null;
-		int indFrom1, indFrom2, indTo1, indTo2;
-		
-		ret.append("<html><body>");
-		ret.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
+
 		ret.append("<table border=\"1\">");
-		for (Integer ind: mapping.keySet()) {
-			splitPoint = mapping.get(ind);
-			indFrom1 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus1+1;
-			indTo1 = splitPoint.sentenceIndCorpus1;
 
-			indFrom2 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus2+1;
-			indTo2 = splitPoint.sentenceIndCorpus2;
+        for (List<String> pairList : getAsDoubleList(true)) {
+            ret.append("<tr><td>");
+            String val = "";
+            if (pairList != null && pairList.size() > 0) {
+                val = pairList.get(0);
+            }
+            ret.append(val);
+            ret.append("</td>");
+            ret.append(IOUtil.ln);
+            ret.append("<td>");
+            val = "";
+            if (pairList != null && pairList.size() > 1) {
+                val = pairList.get(1);
+            }
+            ret.append(val);
+            ret.append("</td></tr>");
+            ret.append(IOUtil.ln);
+        }
+		ret.append("</table>");
+		
+		return ret.toString();
+	}
 
-			if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-				//додати блок текст-переклад якщо хоча б одна з частин непорожня
-				ret.append("<tr><td>");
-				for (int i = indFrom1; i < indTo1; i++) {
-					ret.append(originalCorpus.getSentenceList().get(i).getContent());
-					ret.append(IOUtil.ln);
-				}
-				ret.append("</td>");
-				ret.append(IOUtil.ln);
+    public List<List<String>> getAsDoubleList(boolean bMarkSplitPoints) {
+        List<List<String>> ret = new ArrayList<List<String>>();
+        SplitPoint prevSplitPoint = null;
+        SplitPoint splitPoint = null;
+        int indFrom1, indFrom2, indTo1, indTo2;
 
-				ret.append("<td>");
-				for (int i = indFrom2; i < indTo2; i++) {
-					ret.append(translatedCorpus.getSentenceList().get(i).getContent());
-					ret.append(IOUtil.ln);
-				}
-				ret.append("</td></tr>");
-				ret.append(IOUtil.ln);
-			}
+        for (Integer ind: mapping.keySet()) {
+            splitPoint = mapping.get(ind);
+            indFrom1 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus1+1;
+            indTo1 = splitPoint.sentenceIndCorpus1;
 
-			ret.append("<tr><td>");
-			ret.append(originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContentWithMarkedWord(splitPoint.splitWf1));
-			ret.append("</td>");
-			ret.append(IOUtil.ln);
+            indFrom2 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus2+1;
+            indTo2 = splitPoint.sentenceIndCorpus2;
 
-			ret.append("<td>");
-			ret.append(translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContentWithMarkedWord(splitPoint.splitWf2));
-			ret.append("</td></tr>");
-			ret.append(IOUtil.ln);
-			
-			prevSplitPoint = splitPoint;
-		}
-		//add last text
-		if (splitPoint != null) {
-			indFrom1 = splitPoint.sentenceIndCorpus1+1;
-			indTo1 = originalCorpus.getSentenceList().size();
+            if (indTo1 > indFrom1 || indTo2 > indFrom2) {
+                //додати блок текст-переклад якщо хоча б одна з частин непорожня
+                ArrayList pairList =  new ArrayList<String>(2);
+                StringBuffer cellText = new StringBuffer();
+                //original text
+                for (int i = indFrom1; i < indTo1; i++) {
+                    cellText.append(originalCorpus.getSentenceList().get(i).getContent());
+                    cellText.append(IOUtil.ln);
+                }
+                pairList.add(cellText.toString());
 
-			indFrom2 = splitPoint.sentenceIndCorpus2+1;
-			indTo2 = translatedCorpus.getSentenceList().size();
+                //translation
+                cellText = new StringBuffer();
+                for (int i = indFrom2; i < indTo2; i++) {
+                    cellText.append(translatedCorpus.getSentenceList().get(i).getContent());
+                    cellText.append(IOUtil.ln);
+                }
+                pairList.add(cellText.toString());
+                ret.add(pairList);
+            }
 
-			if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-				//додати блок текст-переклад якщо хоча б одна з частин непорожня
-				ret.append("<tr><td>");
-				for (int i = indFrom1; i < indTo1; i++) {
-					ret.append(originalCorpus.getSentenceList().get(i).getContent());
-					ret.append(IOUtil.ln);
-				}
-				ret.append("</td>");
-				ret.append(IOUtil.ln);
+            ArrayList pairList =  new ArrayList<String>(2);
+            //original text
+            if (bMarkSplitPoints) {
+                pairList.add(originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContentWithMarkedWord(splitPoint.splitWf1));
+            } else {
+                pairList.add(originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContent());
+            }
 
-				ret.append("<td>");
-				for (int i = indFrom2; i < indTo2; i++) {
-					ret.append(translatedCorpus.getSentenceList().get(i).getContent());
-					ret.append(IOUtil.ln);
-				}
-				ret.append("</td></tr>");
-				ret.append(IOUtil.ln);
-			}
-		} else { //no split points
+            //translation
+            if (bMarkSplitPoints) {
+                pairList.add(translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContentWithMarkedWord(splitPoint.splitWf2));
+            } else {
+                pairList.add(translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContent());
+            }
+            ret.add(pairList);
+
+            prevSplitPoint = splitPoint;
+        }
+        //add last text
+        if (splitPoint != null) {
+            indFrom1 = splitPoint.sentenceIndCorpus1+1;
+            indTo1 = originalCorpus.getSentenceList().size();
+
+            indFrom2 = splitPoint.sentenceIndCorpus2+1;
+            indTo2 = translatedCorpus.getSentenceList().size();
+
+            if (indTo1 > indFrom1 || indTo2 > indFrom2) {
+                //додати блок текст-переклад якщо хоча б одна з частин непорожня
+                ArrayList pairList =  new ArrayList<String>(2);
+                StringBuffer cellText = new StringBuffer();
+                //original text
+                for (int i = indFrom1; i < indTo1; i++) {
+                    cellText.append(originalCorpus.getSentenceList().get(i).getContent());
+                    cellText.append(IOUtil.ln);
+                }
+                pairList.add(cellText.toString());
+
+                //translation
+                cellText = new StringBuffer();
+                for (int i = indFrom2; i < indTo2; i++) {
+                    cellText.append(translatedCorpus.getSentenceList().get(i).getContent());
+                    cellText.append(IOUtil.ln);
+                }
+                pairList.add(cellText.toString());
+                ret.add(pairList);
+            }
+        } else { //no split points
             indTo1 = originalCorpus.getSentenceList().size();
             indTo2 = translatedCorpus.getSentenceList().size();
 
             if (indTo1 > 0 || indTo2 > 0) {
                 //додати блок текст-переклад якщо хоча б одна з частин непорожня
-                ret.append("<tr><td>");
+                ArrayList pairList =  new ArrayList<String>(2);
+                StringBuffer cellText = new StringBuffer();
+                //original text
                 for (int i = 0; i < indTo1; i++) {
-                    ret.append(originalCorpus.getSentenceList().get(i).getContent());
-                    ret.append(IOUtil.ln);
+                    cellText.append(originalCorpus.getSentenceList().get(i).getContent());
+                    cellText.append(IOUtil.ln);
                 }
-                ret.append("</td>");
-                ret.append(IOUtil.ln);
+                pairList.add(cellText.toString());
 
-                ret.append("<td>");
+                //translation
+                cellText = new StringBuffer();
                 for (int i = 0; i < indTo2; i++) {
-                    ret.append(translatedCorpus.getSentenceList().get(i).getContent());
-                    ret.append(IOUtil.ln);
+                    cellText.append(translatedCorpus.getSentenceList().get(i).getContent());
+                    cellText.append(IOUtil.ln);
                 }
-                ret.append("</td></tr>");
-                ret.append(IOUtil.ln);
+                pairList.add(cellText.toString());
+                ret.add(pairList);
             }
         }
-		ret.append("</table></body></html>");
-		
-		return ret.toString();
-	}
+
+        return ret;
+    }
 
 	private class SplitPoint {
 		int sentenceIndCorpus1;

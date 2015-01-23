@@ -31,16 +31,16 @@ public class SentenceReader2 {
 
 	//code of unicode character '…' is \u2026
 	private static String END_OF_SENTENCE = ".!?"+'\u2026';
-	private static String[] NOT_THE_END = {"Mrs.","Dr.","Mr.","..."};
-	
-	StringBuffer sbText;
-	int pos = 0;
-	
+	private static String[] NOT_THE_END = {"Mrs.","Dr.","Mr.","...",".."};
+
+    private StringBuffer sbText;
+	private int pos = 0;
+
 	public SentenceReader2(String text){
 		sbText = new StringBuffer(text);
 	}
 
-	/** Read a sentence from text. A sentence is considered to be terminated by any one of following 
+    /** Read a sentence from text. A sentence is considered to be terminated by any one of following
 	 * chars: '.', '!', '?', '…', or any combination of these characters.
 	 * @return A String containing the contents of the sentence, including any termination characters, 
 	 * or null if the end of the stream has been reached.

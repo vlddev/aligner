@@ -27,6 +27,7 @@ package vlad.aligner.wuo;
 
 import vlad.aligner.wuo.db.DAO;
 import vlad.aligner.wuo.db.DbTranslator;
+import vlad.util.CountHashtable;
 import vlad.util.IOUtil;
 
 import java.io.PrintWriter;
@@ -169,10 +170,25 @@ public class Aligner {
         //dump for debugging
         //pc.dumpMapping();
 
+        List<Integer> badSplitPoints = pc.getBadSplitPoints();
+        System.out.println("=== Quality ===");
+        System.out.println("Split points: " + pc.getMapping().size());
+        System.out.println("Bad split points: " + badSplitPoints.size());
+        if (pc.getMapping().size() > badSplitPoints.size() * 5) {
+           System.out.println("   Remove bad split points. Split ones more.");
+           badSplitPoints.forEach((ind) -> {
+              pc.removeSplitPoint(ind);
+           });
+           pc.makeMappingWithWordsUsedOnce(translator);
+           badSplitPoints = pc.getBadSplitPoints();
+           System.out.println("   Split points: " + pc.getMapping().size());
+           System.out.println("   Bad split points: " + badSplitPoints.size());
+        }
+                
         //store as XML
-        IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
+        //IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
         //store as TMX
-        IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
+        //IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
         //store as HTML
         IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
 
@@ -184,6 +200,7 @@ public class Aligner {
                 ", sentences - " + corp2.getSentenceList().size());
         System.out.println("Division points - "+ pc.getCorpusPairCount());
         System.out.println("Done in "+ runTime + " sec.");
+        ceTr.close();
 
     }
 
@@ -252,4 +269,18 @@ public class Aligner {
         ceTr.close();
     }
 
+    public static void extractTr(Connection con, ParallelCorpus pc, CountHashtable<String> trStats) {
+        TrExtractor trExtractor = new TrExtractor(con);
+        trExtractor.setTrStats(trStats);
+        for (List<String> pairList : pc.getAsDoubleList(false)) {
+           String enSent = pairList.get(0);
+           String ukSent = pairList.get(1);
+           System.out.println("--------------");
+           System.out.println("en:   " + enSent);
+           System.out.println("uk:   " + ukSent);
+           System.out.println("--------------");
+           trExtractor.extractTranslations(ukSent, enSent);
+        }
+  
+    }
 }

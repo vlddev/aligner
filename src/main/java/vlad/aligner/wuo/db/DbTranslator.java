@@ -353,4 +353,42 @@ public class DbTranslator implements TranslatorInterface {
         }
         return ret;
     }
+
+	public void storeListOfPairObjects(List<List<String>> pairList, String textName) throws Exception {
+		String sqlInsTxt = "INSERT INTO par_txt(name) VALUES (?) ";
+		String sql = "INSERT INTO par_cnt(txt_id, en, uk) VALUES (?, ?, ?) ";
+		PreparedStatement ps = null;
+  
+		try {
+		   ce.setAutoCommit(false);
+		   int txtId = -1;
+		   ps = this.ce.prepareStatement(sqlInsTxt, 1);
+		   ps.setString(1, textName);
+		   ps.executeUpdate();
+		   ResultSet rs = ps.getGeneratedKeys();
+		   if (rs.next()) {
+			  txtId = rs.getInt(1);
+		   }
+		   DAO.closeStatement(ps);
+  
+		   ps = ce.prepareStatement(sql);
+		   for (List<String> pair : pairList) {
+			  String enSent = pair.get(0).trim();
+			  String ukSent = pair.get(1).trim();
+			  ps.clearParameters();
+			  ps.setInt(1, txtId);
+			  ps.setString(2, enSent);
+			  ps.setString(3, ukSent);
+			  ps.executeUpdate();
+		   }
+  
+		   ce.commit();
+		} catch (SQLException ex) {
+		   ex.printStackTrace();
+		   ce.rollback();
+		} finally {
+		   DAO.closeStatement(ps);
+		}
+  
+	 }
 }

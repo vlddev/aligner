@@ -87,6 +87,24 @@ public class ParallelCorpus {
 		}
 		return bAdded;
 	}
+
+	public boolean removeSplitPoint(Integer ind) {
+		boolean bDone = false;
+		if (this.mapping.containsKey(ind)) {
+		   SplitPoint sp = (SplitPoint)this.mapping.get(ind);
+		   if (this.reverseMapping.containsKey(sp.sentenceIndCorpus2)) {
+			  this.mapping.remove(ind);
+			  this.reverseMapping.remove(sp.sentenceIndCorpus2);
+			  bDone = true;
+		   } else {
+			  System.out.println("SplitPoint [" + sp.sentenceIndCorpus1 + "; " + sp.sentenceIndCorpus2 + "\t" + sp.splitWf1 + "; " + sp.splitWf2 + "] was not removed. No entry in reverseMapping.");
+		   }
+		} else {
+		   System.out.println("SplitPoint was not removed. SplitPoint with key = " + ind + " not exist.");
+		}
+  
+		return bDone;
+	 }
 	
 	private List<String> sortBasesByWfOrderInList(Map<String,String> htBaseWfMap, List<String> listWf) {
 		List<String> ret = new ArrayList<String>();
@@ -459,7 +477,70 @@ public class ParallelCorpus {
 		return new ParallelCorpus(corp1, corp2);
 	}
 	
-	
+	// TODO: rewrite
+	public List<Integer> getBadSplitPoints() {
+		List ret = new ArrayList();
+		int maxSentDiff = 3;
+		int minLastGood = 15;
+		SplitPoint prevSplitPoint = null;
+		SplitPoint splitPoint = null;
+		int lastGoodPairs = 0;
+		List maybeInvalid = new ArrayList();
+  
+		int indFrom1;
+		int indFrom2;
+		int indTo1;
+		int indTo2;
+		for(Iterator var12 = this.mapping.keySet().iterator(); var12.hasNext(); prevSplitPoint = splitPoint) {
+		   Integer ind = (Integer)var12.next();
+		   splitPoint = (SplitPoint)this.mapping.get(ind);
+		   indFrom1 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus1 + 1;
+		   indTo1 = splitPoint.sentenceIndCorpus1;
+		   indFrom2 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus2 + 1;
+		   indTo2 = splitPoint.sentenceIndCorpus2;
+		   if (indTo1 > indFrom1 || indTo2 > indFrom2) {
+			  if (Math.abs(indTo1 - indFrom1 - (indTo2 - indFrom2)) > maxSentDiff) {
+				 lastGoodPairs = 0;
+			  } else {
+				 ++lastGoodPairs;
+			  }
+		   }
+  
+		   if (lastGoodPairs < minLastGood) {
+			  if (lastGoodPairs > 0) {
+				 maybeInvalid.add(ind);
+			  } else {
+				 if (maybeInvalid.size() > 0) {
+					Iterator var14 = maybeInvalid.iterator();
+  
+					while(var14.hasNext()) {
+					   Integer mInd = (Integer)var14.next();
+					   ret.add(mInd);
+					}
+				 }
+  
+				 maybeInvalid.clear();
+				 ret.add(ind);
+			  }
+		   } else {
+			  maybeInvalid.clear();
+		   }
+  
+		   ++lastGoodPairs;
+		}
+  
+		if (splitPoint != null) {
+		   indFrom1 = splitPoint.sentenceIndCorpus1 + 1;
+		   indTo1 = this.originalCorpus.getSentenceList().size();
+		   indFrom2 = splitPoint.sentenceIndCorpus2 + 1;
+		   indTo2 = this.translatedCorpus.getSentenceList().size();
+		   if (indTo1 <= indFrom1 && indTo2 > indFrom2) {
+		   }
+		}
+  
+		return ret;
+	}
+
 	private boolean isAcceptablePositionOfDividerWords(String word1, String word2, int startPos1, int startPos2) {
 		boolean ret = true;
 		//Check position of word

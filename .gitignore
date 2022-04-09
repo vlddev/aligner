@@ -1,0 +1,5 @@
+gradle/*
+.gradle/*
+target/*
+target/classes/*
+vlad-aligner.iml

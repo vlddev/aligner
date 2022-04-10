@@ -1,5 +1,8 @@
-gradle/*
-.gradle/*
-target/*
-target/classes/*
+/gradle/
+/.gradle/
+/target/
 vlad-aligner.iml
+/.vscode/
+/.idea/
+gradlew
+gradlew.bat

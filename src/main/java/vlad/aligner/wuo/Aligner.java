@@ -1,28 +1,3 @@
-/*
-#######################################################################
-#
-#  vlad-aligner - parallel texts aligner
-#
-#  Copyright (C) 2009-2010 Volodymyr Vlad
-#
-#  This file is part of vlad-aligner.
-#
-#  Foobar is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  Foobar is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
-#
-#######################################################################
-*/
-
 package vlad.aligner.wuo;
 
 import vlad.aligner.wuo.db.DAO;
@@ -158,7 +133,7 @@ public class Aligner {
         Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
         corp2.setLang(locTo); //new Locale("uk","UA")
 
-        ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
+        //ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
 
         ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
         pc.setName("test");
@@ -174,7 +149,7 @@ public class Aligner {
         System.out.println("=== Quality ===");
         System.out.println("Split points: " + pc.getMapping().size());
         System.out.println("Bad split points: " + badSplitPoints.size());
-        if (pc.getMapping().size() > badSplitPoints.size() * 5) {
+        if (badSplitPoints.size() > 0 && pc.getMapping().size() > badSplitPoints.size() * 5) {
            System.out.println("   Remove bad split points. Split ones more.");
            badSplitPoints.forEach((ind) -> {
               pc.removeSplitPoint(ind);

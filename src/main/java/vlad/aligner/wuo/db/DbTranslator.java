@@ -356,7 +356,7 @@ public class DbTranslator implements TranslatorInterface {
 
 	public void storeListOfPairObjects(List<List<String>> pairList, String textName) throws Exception {
 		String sqlInsTxt = "INSERT INTO par_txt(name) VALUES (?) ";
-		String sql = "INSERT INTO par_cnt(txt_id, en, uk) VALUES (?, ?, ?) ";
+		String sql = "INSERT INTO par_sent(txt_id, en, uk) VALUES (?, ?, ?) ";
 		PreparedStatement ps = null;
   
 		try {

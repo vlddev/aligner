@@ -118,4 +118,8 @@ public class Word {
 		return ret;
 	}
 
+	public String asString() {
+		return "("+getInf() +", "+getType()+")";
+	}
+
 }

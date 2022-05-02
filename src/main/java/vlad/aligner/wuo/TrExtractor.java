@@ -51,9 +51,57 @@ public class TrExtractor {
       MatchSentence ukSent = new MatchSentence(ukSentStr, ukLoc, this.translator);
       MatchSentence enSent = new MatchSentence(enSentStr, enLoc, this.translator);
       for (MatchSentence.MatchWf enWf : enSent.getMatchWfList()) {
+         Map<Word, List<Word>> trMap = new HashMap();
+         List<Word> ukTrList = new ArrayList();
+         List<MatchSentence.MatchWf> ukMatches;
+         for (Word enWord : enWf.bases) {
+            List<Word> enWordList = new ArrayList();
+            enWordList.add(enWord);
+            List<Word> trList = translator.getTranslation(enWordList, enLoc, ukLoc);
+            trMap.put(enWord, trList);
+            for (Word ukWord : trList) {
+               if (!ukTrList.contains(ukWord)) {
+                  ukTrList.add(ukWord);
+               }
+            }
+         }
+         ukMatches = ukSent.findMatches(ukTrList);
 
+         if (ukMatches.size() == 1) {
+            MatchSentence.MatchWf ukMatch = ukMatches.get(0);
+            enWf.matchingWf = ukMatch;
+            ukMatch.matchingWf = enWf;
+            List<Word> matchUkWordList = ukTrList.stream().filter(ukMatch.bases::contains).collect(Collectors.toList());
+            if (matchUkWordList.size() > 1) {
+               System.out.println("More then one uk word for (" + enWf.wf + "," + enWf.matchingWf.wf + ")");
+            }
+
+            enWf.trBase = matchUkWordList.get(0);
+            List<Word> matchEnWordList = new ArrayList();
+            for (Word enWord : trMap.keySet()) {
+               if ((trMap.get(enWord)).contains(enWf.trBase)) {
+                  matchEnWordList.add(enWord);
+               }
+            }
+            if (matchEnWordList.size() > 1) {
+               System.out.println("More then one en word for (" + enWf.wf + "," + enWf.matchingWf.wf + ")");
+            }
+
+            enWf.base = matchEnWordList.get(0);
+         }
       }
 
+      // fill stats
+      for (MatchSentence.MatchWf enWf1 : enSent.getMatchWfList()) {
+         if (enWf1.matchingWf != null) {
+            if (this.getTrStats() != null) {
+               this.getTrStats().add("" + enWf1.base.getId() + "_" + enWf1.trBase.getId());
+            }
+            System.out.println(enWf1.wf + " , " + enWf1.base.asString() + " -> " + enWf1.trBase.asString() + ", " + enWf1.matchingWf.wf);
+         }
+      }
+
+      /* old code
       Iterator var5 = enSent.getMatchWfList().iterator();
 
       while(true) {
@@ -116,5 +164,7 @@ public class TrExtractor {
 
          enWf.base = matchEnWordList.get(0);
       }
+
+       */
    }
 }

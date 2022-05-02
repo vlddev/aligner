@@ -5,6 +5,7 @@ import vlad.aligner.wuo.db.DbTranslator;
 import vlad.util.CountHashtable;
 import vlad.util.IOUtil;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.util.*;
@@ -114,8 +115,11 @@ public class Aligner {
         String dbUrlTr = System.getProperty("jdbc.url");
         String dbJdbcDriver = System.getProperty("jdbc.driver");
 
+        String storeParSentInDb = System.getProperty("store.sent.db", "");
+        String writeProtocol = System.getProperty("write.protocol", "");
+
         Connection ceTr = DAO.getConnection(dbUser, dbPwd, dbUrlTr, dbJdbcDriver);
-        TranslatorInterface translator = new DbTranslator(ceTr);
+        DbTranslator translator = new DbTranslator(ceTr);
 
         List<String> errorList = translator.checkDB(locFrom, locTo);
         if (errorList != null && errorList.size() > 0) {
@@ -133,7 +137,9 @@ public class Aligner {
         Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
         corp2.setLang(locTo); //new Locale("uk","UA")
 
-        //ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
+        if (writeProtocol.length() > 0) {
+            ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
+        }
 
         ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
         pc.setName("test");
@@ -166,6 +172,11 @@ public class Aligner {
         //IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
         //store as HTML
         IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
+
+        if (storeParSentInDb.length() > 0) {
+            File dbFileName = new File(sFile);
+            translator.storeListOfPairObjects(pc.getAsDoubleList(false), dbFileName.getName());
+        }
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");

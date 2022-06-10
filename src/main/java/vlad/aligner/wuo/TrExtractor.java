@@ -15,8 +15,8 @@ public class TrExtractor {
    CountHashtable<String> trStats;
 
    public static void main(String[] args) throws Exception {
-      String ukSent = "двері зачинилися.";
-      String enSent = "the door closed.";
+      String ukSent = "Мій дім.";
+      String enSent = "My home.";
       String dbUser = System.getProperty("jdbc.user");
       String dbPwd = System.getProperty("jdbc.password");
       String dbUrlTr = System.getProperty("jdbc.url");
@@ -47,7 +47,7 @@ public class TrExtractor {
       this.trStats = trStats;
    }
 
-   public void extractTranslations(String ukSentStr, String enSentStr) {
+   public float extractTranslations(String ukSentStr, String enSentStr) {
       MatchSentence ukSent = new MatchSentence(ukSentStr, ukLoc, this.translator);
       MatchSentence enSent = new MatchSentence(enSentStr, enLoc, this.translator);
       for (MatchSentence.MatchWf enWf : enSent.getMatchWfList()) {
@@ -73,7 +73,7 @@ public class TrExtractor {
             ukMatch.matchingWf = enWf;
             List<Word> matchUkWordList = ukTrList.stream().filter(ukMatch.bases::contains).collect(Collectors.toList());
             if (matchUkWordList.size() > 1) {
-               System.out.println("More then one uk word for (" + enWf.wf + "," + enWf.matchingWf.wf + ")");
+               //System.out.println("More then one uk word for (" + enWf.wf + "," + enWf.matchingWf.wf + ")");
             }
 
             enWf.trBase = matchUkWordList.get(0);
@@ -84,22 +84,33 @@ public class TrExtractor {
                }
             }
             if (matchEnWordList.size() > 1) {
-               System.out.println("More then one en word for (" + enWf.wf + "," + enWf.matchingWf.wf + ")");
+               //System.out.println("More then one en word for (" + enWf.wf + "," + enWf.matchingWf.wf + ")");
             }
 
             enWf.base = matchEnWordList.get(0);
          }
       }
 
+      int matchCount = 0;
       // fill stats
       for (MatchSentence.MatchWf enWf1 : enSent.getMatchWfList()) {
          if (enWf1.matchingWf != null) {
             if (this.getTrStats() != null) {
                this.getTrStats().add("" + enWf1.base.getId() + "_" + enWf1.trBase.getId());
             }
-            System.out.println(enWf1.wf + " , " + enWf1.base.asString() + " -> " + enWf1.trBase.asString() + ", " + enWf1.matchingWf.wf);
+            matchCount++;
+            //System.out.println(enWf1.wf + " , " + enWf1.base.asString() + " -> " + enWf1.trBase.asString() + ", " + enWf1.matchingWf.wf);
          }
       }
+
+      // match quotient
+      float mq = 0.0F;
+      if (enSent.getMatchWfList().size() > 0 && ukSent.getMatchWfList().size() > 0) {
+         mq = (float)(matchCount*2)/(float)(enSent.getMatchWfList().size() + ukSent.getMatchWfList().size());
+      }
+      //System.out.println("mq = "+mq);
+      return mq;
+
 
       /* old code
       Iterator var5 = enSent.getMatchWfList().iterator();

@@ -12,8 +12,14 @@ public class MatchSentence {
     public MatchSentence(String sentStr, Locale lang, TranslatorInterface translator) {
         this.lang = lang;
         Sentence sent = new Sentence(sentStr);
-        for (String wf : sent.getElemList()) {
-            this.matchWfList.add(new MatchWf(wf, translator.getBaseForm(wf, lang)));
+        List<String> elemList = sent.getElemList();
+        for (int i = 0; i < elemList.size(); i++) {
+            String wf = elemList.get(i);
+            List<Word> bases = translator.getBaseForm(wf, lang);
+            if (i == 0) {
+                bases.addAll(translator.getBaseForm(wf.toLowerCase(), lang));
+            }
+            this.matchWfList.add(new MatchWf(wf, bases));
         }
     }
 

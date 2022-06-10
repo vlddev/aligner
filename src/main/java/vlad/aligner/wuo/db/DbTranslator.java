@@ -25,6 +25,7 @@
 
 package vlad.aligner.wuo.db;
 
+import vlad.aligner.wuo.TrExtractor;
 import vlad.aligner.wuo.TranslatorInterface;
 import vlad.aligner.wuo.Word;
 import vlad.aligner.wuo.WordForm;
@@ -355,8 +356,10 @@ public class DbTranslator implements TranslatorInterface {
     }
 
 	public void storeListOfPairObjects(List<List<String>> pairList, String textName) throws Exception {
+		int maxSentLen = 1000;
+		TrExtractor trExtractor = new TrExtractor(ce);
 		String sqlInsTxt = "INSERT INTO par_txt(name) VALUES (?) ";
-		String sql = "INSERT INTO par_sent(txt_id, en, uk) VALUES (?, ?, ?) ";
+		String sql = "INSERT INTO par_sent(txt_id, en, uk, matchq) VALUES (?, ?, ?, ?) ";
 		PreparedStatement ps = null;
   
 		try {
@@ -373,13 +376,17 @@ public class DbTranslator implements TranslatorInterface {
   
 		   ps = ce.prepareStatement(sql);
 		   for (List<String> pair : pairList) {
-			  String enSent = pair.get(0).trim();
-			  String ukSent = pair.get(1).trim();
-			  ps.clearParameters();
-			  ps.setInt(1, txtId);
-			  ps.setString(2, enSent);
-			  ps.setString(3, ukSent);
-			  ps.executeUpdate();
+			  String enSent = cleanupSentence(pair.get(0).trim());
+			  String ukSent = cleanupSentence(pair.get(1).trim());
+			  if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
+				  float mq = trExtractor.extractTranslations(ukSent, enSent);
+				  ps.clearParameters();
+				  ps.setInt(1, txtId);
+				  ps.setString(2, enSent);
+				  ps.setString(3, ukSent);
+				  ps.setFloat(4, mq);
+				  ps.executeUpdate();
+			  }
 		   }
   
 		   ce.commit();
@@ -389,6 +396,19 @@ public class DbTranslator implements TranslatorInterface {
 		} finally {
 		   DAO.closeStatement(ps);
 		}
-  
-	 }
+  	}
+
+	private String cleanupSentence(String sent) {
+		int firstLetterPos = 0;
+		for (int i = 0; i < sent.length(); i++) {
+			if (Character.isLetterOrDigit(sent.charAt(i))) {
+				firstLetterPos = i;
+				break;
+			}
+		}
+		if (firstLetterPos > 0) {
+			return sent.substring(firstLetterPos);
+		}
+		return sent;
+	}
 }

@@ -173,7 +173,7 @@ public class Aligner {
         //store as HTML
         IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
 
-        if (storeParSentInDb.length() > 0) {
+        if (storeParSentInDb.length() > 0 && storeParSentInDb.equalsIgnoreCase("true")) {
             File dbFileName = new File(sFile);
             translator.storeListOfPairObjects(pc.getAsDoubleList(false), dbFileName.getName());
         }

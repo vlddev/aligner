@@ -149,8 +149,7 @@ public class ParallelCorpus {
 				for (String sStopword : StopWords.getStopwords(originalCorpus.getLang())) {
 					htBaseWf1.remove(sStopword);
 				}
-				
-				
+
 				// слова відсортовані по розміщенню відповідних словоформ в тексті
 				List<String> listWords1 = sortBasesByWfOrderInList(htBaseWf1, listWfOnce1);
 	

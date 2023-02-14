@@ -51,6 +51,8 @@ public class Corpus {
 		txt = txt.replace("...","…");
 		//2. replace "’" with "'"
 		txt = txt.replace("’","'");
+		txt = txt.replace("“","\"");
+		txt = txt.replace("”","\"");
 		this.text = txt;
 
 		SentenceReader2 sr = new SentenceReader2(txt);
@@ -60,11 +62,13 @@ public class Corpus {
 			int prevSentPos = 0;
 			while(str!=null){
 				str = str.replace(LINE_SEPARATOR," ").trim();
-				sent = new Sentence(str);
-				sent.setStartPosInText(prevSentPos);
-				sentenceList.add(sent);
+				if (str.length() > 0) {
+					sent = new Sentence(str);
+					sent.setStartPosInText(prevSentPos);
+					sentenceList.add(sent);
+					prevSentPos += sent.getElemList().size();
+				}
 				str = sr.readSentence();
-				prevSentPos += sent.getElemList().size();
 				//TODO: check words count in sentence.
 				// If no words, add string to the previous sentence
 			}

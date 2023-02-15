@@ -173,10 +173,9 @@ public class Aligner {
         //store as HTML
         IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
 
-        if (storeParSentInDb.length() > 0 && storeParSentInDb.equalsIgnoreCase("true")) {
-            File dbFileName = new File(sFile);
-            translator.storeListOfPairObjects(pc.getAsDoubleList(false), dbFileName.getName());
-        }
+        boolean writeDb = storeParSentInDb.length() > 0 && storeParSentInDb.equalsIgnoreCase("true");
+        boolean writeJson = true;
+        translator.storeListOfPairObjects(pc.getAsDoubleList(false), sFile, writeDb, writeJson);
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");

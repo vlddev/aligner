@@ -1,9 +1,12 @@
 package vlad.aligner.wuo;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.json.JSONObject;
 import vlad.aligner.wuo.db.DAO;
 import vlad.aligner.wuo.db.DbTranslator;
 import vlad.util.CountHashtable;
@@ -77,6 +80,7 @@ public class TrExtractor {
             }
 
             enWf.trBase = matchUkWordList.get(0);
+            ukMatch.base = enWf.trBase;
             List<Word> matchEnWordList = new ArrayList();
             for (Word enWord : trMap.keySet()) {
                if ((trMap.get(enWord)).contains(enWf.trBase)) {
@@ -88,18 +92,40 @@ public class TrExtractor {
             }
 
             enWf.base = matchEnWordList.get(0);
+            ukMatch.trBase = enWf.base;
          }
       }
 
+      List<String> enInfs = new ArrayList<>();
+      List<String> ukInfs = new ArrayList<>();
+      List<String> enUkMaps = new ArrayList<>();
       int matchCount = 0;
       // fill stats
       for (MatchSentence.MatchWf enWf1 : enSent.getMatchWfList()) {
          if (enWf1.matchingWf != null) {
+            enInfs.add(enWf1.wf+"|"+enWf1.base.getId()+":"+enWf1.base.getInf()+":"+enWf1.base.getType());
+            enUkMaps.add(enWf1.wf+"|"+enWf1.base.getId()+":"+enWf1.base.getInf()+":"+enWf1.base.getType()
+                    +"|"+enWf1.trBase.getId()+":"+enWf1.trBase.getInf()+":"+enWf1.trBase.getType()+"|"+enWf1.matchingWf.wf);
             if (this.getTrStats() != null) {
                this.getTrStats().add("" + enWf1.base.getId() + "_" + enWf1.trBase.getId());
             }
             matchCount++;
             //System.out.println(enWf1.wf + " , " + enWf1.base.asString() + " -> " + enWf1.trBase.asString() + ", " + enWf1.matchingWf.wf);
+         } else {
+            if (enWf1.bases.size() == 1) {
+               Word base = enWf1.bases.get(0);
+               enInfs.add(enWf1.wf+"|"+base.getId()+":"+base.getInf()+":"+base.getType());
+            }
+         }
+      }
+      for (MatchSentence.MatchWf ukWf1 : ukSent.getMatchWfList()) {
+         if (ukWf1.matchingWf != null) {
+            ukInfs.add(ukWf1.wf + "|" + ukWf1.base.getId() + ":" + ukWf1.base.getInf() + ":" + ukWf1.base.getType());
+         } else {
+            if (ukWf1.bases.size() == 1) {
+               Word base = ukWf1.bases.get(0);
+               ukInfs.add(ukWf1.wf+"|"+base.getId()+":"+base.getInf()+":"+base.getType());
+            }
          }
       }
 
@@ -108,6 +134,19 @@ public class TrExtractor {
       if (enSent.getMatchWfList().size() > 0 && ukSent.getMatchWfList().size() > 0) {
          mq = (float)(matchCount*2)/(float)(enSent.getMatchWfList().size() + ukSent.getMatchWfList().size());
       }
+
+      JSONObject jsonObject = new JSONObject();
+      try {
+         Field changeMap = jsonObject.getClass().getDeclaredField("map");
+         changeMap.setAccessible(true);
+         changeMap.set(jsonObject, new LinkedHashMap<>());
+         changeMap.setAccessible(false);
+      } catch (IllegalAccessException | NoSuchFieldException e) {
+         System.out.println(e.getMessage());
+      }
+      jsonObject.put("en", enSentStr).put("uk", ukSentStr).put("matchq", mq);
+      jsonObject.put("analyse", new JSONObject().put("en", enInfs).put("uk", ukInfs).put("map", enUkMaps));
+      System.out.println(jsonObject.toString(1));
       //System.out.println("mq = "+mq);
       return mq;
 

@@ -25,11 +25,13 @@
 
 package vlad.aligner.wuo.db;
 
+import org.json.JSONObject;
 import vlad.aligner.wuo.TrExtractor;
 import vlad.aligner.wuo.TranslatorInterface;
 import vlad.aligner.wuo.Word;
 import vlad.aligner.wuo.WordForm;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -355,8 +357,11 @@ public class DbTranslator implements TranslatorInterface {
         return ret;
     }
 
-	public void storeListOfPairObjects(List<List<String>> pairList, String textName) throws Exception {
+	public void storeListOfPairObjects(List<List<String>> pairList, String sFileName, boolean writeToDb, boolean writeToJson) throws Exception {
+		if (!writeToDb && !writeToJson) return;
 		int maxSentLen = 1000;
+		File dbFileName = new File(sFileName);
+		String textName = dbFileName.getName();
 		TrExtractor trExtractor = new TrExtractor(ce);
 		String sqlInsTxt = "INSERT INTO par_txt(name) VALUES (?) ";
 		String sql = "INSERT INTO par_sent(txt_id, en, uk, matchq) VALUES (?, ?, ?, ?) ";
@@ -365,27 +370,36 @@ public class DbTranslator implements TranslatorInterface {
 		try {
 		   ce.setAutoCommit(false);
 		   int txtId = -1;
-		   ps = this.ce.prepareStatement(sqlInsTxt, 1);
-		   ps.setString(1, textName);
-		   ps.executeUpdate();
-		   ResultSet rs = ps.getGeneratedKeys();
-		   if (rs.next()) {
-			  txtId = rs.getInt(1);
+		   if (writeToDb) {
+			   ps = this.ce.prepareStatement(sqlInsTxt, 1);
+			   ps.setString(1, textName);
+			   ps.executeUpdate();
+			   ResultSet rs = ps.getGeneratedKeys();
+			   if (rs.next()) {
+				   txtId = rs.getInt(1);
+			   }
+			   DAO.closeStatement(ps);
+			   ps = ce.prepareStatement(sql);
 		   }
-		   DAO.closeStatement(ps);
-  
-		   ps = ce.prepareStatement(sql);
 		   for (List<String> pair : pairList) {
 			  String enSent = cleanupSentence(pair.get(0).trim());
 			  String ukSent = cleanupSentence(pair.get(1).trim());
 			  if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
 				  float mq = trExtractor.extractTranslations(ukSent, enSent);
-				  ps.clearParameters();
-				  ps.setInt(1, txtId);
-				  ps.setString(2, enSent);
-				  ps.setString(3, ukSent);
-				  ps.setFloat(4, mq);
-				  ps.executeUpdate();
+				  if (writeToDb) {
+					  ps.clearParameters();
+					  ps.setInt(1, txtId);
+					  ps.setString(2, enSent);
+					  ps.setString(3, ukSent);
+					  ps.setFloat(4, mq);
+					  ps.executeUpdate();
+				  }
+
+				  if (writeToJson) {
+					  // TODO: get Json from trExtractor.extractTranslations
+					  JSONObject jsonObject = new JSONObject().put("en", enSent).put("uk", ukSent).put("matchq", mq);
+					  //System.out.println(jsonObject.toString(1));
+				  }
 			  }
 		   }
   
@@ -399,16 +413,17 @@ public class DbTranslator implements TranslatorInterface {
   	}
 
 	private String cleanupSentence(String sent) {
+		String ret = sent.replace("\n", " ").replace("  ", " ");
 		int firstLetterPos = 0;
-		for (int i = 0; i < sent.length(); i++) {
-			if (Character.isLetterOrDigit(sent.charAt(i))) {
+		for (int i = 0; i < ret.length(); i++) {
+			if (Character.isLetterOrDigit(ret.charAt(i))) {
 				firstLetterPos = i;
 				break;
 			}
 		}
 		if (firstLetterPos > 0) {
-			return sent.substring(firstLetterPos);
+			ret = ret.substring(firstLetterPos);
 		}
-		return sent;
+		return ret;
 	}
 }

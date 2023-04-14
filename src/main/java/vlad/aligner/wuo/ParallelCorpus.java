@@ -1056,7 +1056,7 @@ public class ParallelCorpus {
         }
 	}
 
-	protected Map<Integer,SplitPoint> getMapping() {
+	public Map<Integer,SplitPoint> getMapping() {
 		return mapping;
 	}
 

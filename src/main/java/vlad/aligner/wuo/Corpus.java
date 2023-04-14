@@ -1,5 +1,6 @@
 package vlad.aligner.wuo;
 
+import vlad.text.LineSentenceReader;
 import vlad.text.SentenceReader2;
 import vlad.util.CountHashtable;
 
@@ -7,7 +8,9 @@ import java.io.IOException;
 import java.util.*;
 
 public class Corpus {
-	
+
+	public static final String SENTENCE_PER_LINE = "SPL";
+	public static final String UNFORMATTED_TEXT = "ANY";
 	public static String LINE_SEPARATOR = System.getProperty("line.separator");
 	public static final String DIVIDER_CHARS = ".,:;!?§$%&/()=[]\\#+*<>{}\"—…«»“”•~^‹› \t\r\n";
 	
@@ -15,8 +18,16 @@ public class Corpus {
 	private Locale lang;
 	private String text;
 	private List<Sentence> sentenceList;
+
+	private String inputFormat = UNFORMATTED_TEXT;
 	
 	public Corpus(String text) {
+		// parse to sentences
+		initSentenceList(text);
+	}
+
+	public Corpus(String text, String inputFormat) {
+		this.inputFormat = inputFormat;
 		// parse to sentences
 		initSentenceList(text);
 	}
@@ -35,7 +46,48 @@ public class Corpus {
 	
 	private void initSentenceList(String txt) {
 		//preprocessing
-		
+		txt = removeBOM(txt);
+
+		sentenceList = new ArrayList<>();
+
+		txt = normaliseText(txt);
+		this.text = txt;
+
+		if (SENTENCE_PER_LINE.equals(inputFormat)) {
+			LineSentenceReader sr = new LineSentenceReader(txt);
+			String str = sr.readSentence();
+			while (str != null) {
+				if (str.length() > 0) {
+					sentenceList.add(new Sentence(str));
+				}
+				str = sr.readSentence();
+			}
+		} else {
+			SentenceReader2 sr = new SentenceReader2(txt);
+			try {
+				String str = sr.readSentence();
+				Sentence sent;
+				int prevSentPos = 0;
+				while (str != null) {
+					str = str.replace(LINE_SEPARATOR," ").trim();
+					if (str.length() > 0) {
+						sent = new Sentence(str);
+						sent.setStartPosInText(prevSentPos);
+						sentenceList.add(sent);
+						prevSentPos += sent.getElemList().size();
+					}
+					str = sr.readSentence();
+					//TODO: check words count in sentence.
+					// If no words, add string to the previous sentence
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private String removeBOM(String txt) {
 		// remove first BOM in utf8
 		if (txt.length() > 0) {
 			byte[] bomArr = txt.substring(0, 1).getBytes();
@@ -44,40 +96,18 @@ public class Corpus {
 				txt = txt.substring(1);
 			}
 		}
-		
-		sentenceList = new ArrayList<Sentence>();
-		
+		return txt;
+	}
+
+	private String normaliseText(String txt) {
 		//1. replace "..." with "…"
 		txt = txt.replace("...","…");
 		//2. replace "’" with "'"
 		txt = txt.replace("’","'");
 		txt = txt.replace("“","\"");
 		txt = txt.replace("”","\"");
-		this.text = txt;
-
-		SentenceReader2 sr = new SentenceReader2(txt);
-		try {
-			String str = sr.readSentence();
-			Sentence sent;
-			int prevSentPos = 0;
-			while(str!=null){
-				str = str.replace(LINE_SEPARATOR," ").trim();
-				if (str.length() > 0) {
-					sent = new Sentence(str);
-					sent.setStartPosInText(prevSentPos);
-					sentenceList.add(sent);
-					prevSentPos += sent.getElemList().size();
-				}
-				str = sr.readSentence();
-				//TODO: check words count in sentence.
-				// If no words, add string to the previous sentence
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		return txt;
 	}
-	
 //	/**
 //	 * Знаходить індекс (номер слова в тексті) першого входження слова wf в цей текст (корпус), починаючи з позиції startPos.
 //	 * "Слова" - це елементи списку Sentence.elemList. 

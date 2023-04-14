@@ -135,6 +135,7 @@ public class TrExtractor {
          mq = (float)(matchCount*2)/(float)(enSent.getMatchWfList().size() + ukSent.getMatchWfList().size());
       }
 
+      // TODO: return json
       JSONObject jsonObject = new JSONObject();
       try {
          Field changeMap = jsonObject.getClass().getDeclaredField("map");
@@ -146,7 +147,7 @@ public class TrExtractor {
       }
       jsonObject.put("en", enSentStr).put("uk", ukSentStr).put("matchq", mq);
       jsonObject.put("analyse", new JSONObject().put("en", enInfs).put("uk", ukInfs).put("map", enUkMaps));
-      System.out.println(jsonObject.toString(1));
+      //System.out.println(jsonObject.toString(1));
       //System.out.println("mq = "+mq);
       return mq;
 

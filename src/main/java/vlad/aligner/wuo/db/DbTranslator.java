@@ -323,7 +323,7 @@ public class DbTranslator implements TranslatorInterface {
     /** 
      * Get wordbases which used only once in text
      */
-    public Map<String,String> getWordBasesUsedOnce(Locale langFrom, List<String> wfList) throws Exception {
+    public Map<String,String> getWordBasesUsedOnce(Locale langFrom, List<String> wfList) {
     	Map<String, String> ret = new HashMap<String,String>();
     	Collection<String> ignore = new HashSet<String>();
         String s = "";

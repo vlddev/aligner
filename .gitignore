@@ -6,3 +6,4 @@ vlad-aligner.iml
 /.idea/
 gradlew
 gradlew.bat
+/src/main/resources/aligner.h2.mv.db

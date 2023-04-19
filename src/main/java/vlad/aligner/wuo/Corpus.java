@@ -82,7 +82,7 @@ public class Corpus {
 			LineSentenceReader sr = new LineSentenceReader(txt);
 			String str = sr.readSentence();
 			while (str != null) {
-				if (str.length() > 0) {
+				if (containsLetterOrDigit(str)) {
 					sentenceList.add(new Sentence(str));
 				}
 				str = sr.readSentence();
@@ -95,7 +95,7 @@ public class Corpus {
 				int prevSentPos = 0;
 				while (str != null) {
 					str = str.replace(LINE_SEPARATOR," ").trim();
-					if (str.length() > 0) {
+					if (containsLetterOrDigit(str)) {
 						sent = new Sentence(str);
 						sent.setStartPosInText(prevSentPos);
 						sentenceList.add(sent);
@@ -133,6 +133,19 @@ public class Corpus {
 		txt = txt.replace("”","\"");
 		return txt;
 	}
+
+	private boolean containsLetterOrDigit(String str) {
+		if (str != null) {
+			int sz = str.length();
+			for (int i = 0; i < sz; i++) {
+				if (Character.isLetterOrDigit(str.charAt(i))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 //	/**
 //	 * Знаходить індекс (номер слова в тексті) першого входження слова wf в цей текст (корпус), починаючи з позиції startPos.
 //	 * "Слова" - це елементи списку Sentence.elemList. 

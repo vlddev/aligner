@@ -7,6 +7,7 @@ import picocli.CommandLine.Option;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,7 @@ public class TextToSentencesConverter implements Runnable {
     @Option(names = { "-i", "--input" }, description = "Input file")
     String inputFile = "in.txt";
 
-    @Option(names = { "-il", "--input-lang" }, description = "Language of input file (en,de,uk)")
+    @Option(names = { "-l", "--input-lang" }, description = "Language of input file (en,de,uk)")
     String inputLang = "en";
 
     @Option(names = { "-o", "--output" }, description = "Output file in sentence per line format")
@@ -35,7 +36,13 @@ public class TextToSentencesConverter implements Runnable {
     @Option(names = { "-m", "--method" }, description = "Conversion method (default / stanford)")
     String conversionMethod = "default";
 
+    @Option(names = { "-f", "--force" }, description = "Overwrite output file")
+    boolean overwriteOutput = false;
+
     public void run() {
+        if (!overwriteOutput && Files.exists(Path.of(outputFile))) {
+            throw new RuntimeException("Output file already exists.");
+        }
         List<String> sentences;
         switch (conversionMethod.toLowerCase()) {
             case METHOD_STANFORD:
@@ -57,7 +64,7 @@ public class TextToSentencesConverter implements Runnable {
 
     public String getInputFileContent() {
         try {
-            return new String(Files.readAllBytes(Paths.get(inputFile)));
+            return Files.readString(Paths.get(inputFile));
         } catch (IOException e) {
             e.printStackTrace();
         }

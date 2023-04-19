@@ -46,5 +46,6 @@ public interface TranslatorInterface {
 	
 	public List<Word> getTranslation(List<Word> wfList, Locale langFrom, Locale langTo);
 
-    public Map<String,String> getWordBasesUsedOnce(Locale langFrom, Set<String> wfList) throws Exception;
+	public Map<String,String> getWordBasesUsedOnce(Locale langFrom, Set<String> wfList) throws Exception;
+	public Map<String,String> getWordBasesUsedOnce(Locale langFrom, List<String> wfList) throws Exception;
 }

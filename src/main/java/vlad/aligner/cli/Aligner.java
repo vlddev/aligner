@@ -16,6 +16,11 @@ import java.util.*;
 @Command(name = "Aligner", version = "Aligner 1.0")
 public class Aligner implements Runnable {
 
+    // TODO:  --in-memory-db  - load H2 to memory
+    // TODO:  --additional-db  - additional data to be loaded into memory db
+
+    // TODO:  --batch  - process lot of files using params from input file (batch file)
+
     @Option(names = { "-db", "--db-url" }, description = "JDBC database URL")
     String dbUrl = "";
 
@@ -34,11 +39,11 @@ public class Aligner implements Runnable {
     @Option(names = { "-t", "--to" }, description = "File with translation text")
     String fileTo = "uk.txt";
 
-    @Option(names = { "-fmt", "--input-format" }, description = "Input file format (SPL - sentence per line; ANY - default)")
-    String inputFormat = Corpus.UNFORMATTED_TEXT;
-
     @Option(names = { "-lt", "--lang-to" }, description = "Language of translation text (en,de,uk)")
     String langTo = "uk";
+
+    @Option(names = { "-fmt", "--input-format" }, description = "Input file format (SPL - sentence per line; ANY - default)")
+    String inputFormat = Corpus.UNFORMATTED_TEXT;
 
     @Option(names = { "-o", "--output" }, description = "Output file")
     String outputFile = "out.spl";
@@ -83,6 +88,12 @@ public class Aligner implements Runnable {
     }
 
     public void makeText(String sFile, String langFrom, String sTrFile, String langTo) throws Exception {
+        String textFrom = IOUtil.getFileContent(sFile, "utf-8");
+        String textTo = IOUtil.getFileContent(sTrFile, "utf-8");
+        alignTranslations(textFrom, langFrom, textTo, langTo);
+    }
+
+    public void alignTranslations(String textFrom, String langFrom, String textTo, String langTo) throws Exception {
         Date start = new Date();
         Locale locFrom = new Locale(langFrom);
         Locale locTo = new Locale(langTo);
@@ -102,14 +113,14 @@ public class Aligner implements Runnable {
         }
 
         //read text in first language
-        Corpus corp1 = new Corpus(IOUtil.getFileContent(sFile, "utf-8"));
+        Corpus corp1 = new Corpus(textFrom);
         corp1.setLang(locFrom);
         //read text in second language
-        Corpus corp2 = new Corpus(IOUtil.getFileContent(sTrFile,"utf-8"));
+        Corpus corp2 = new Corpus(textTo);
         corp2.setLang(locTo);
 
         if (this.writeProtocol) {
-            ParallelCorpus.setProtOut(IOUtil.openFile(sFile+".protocol.txt", "utf-8"));
+            ParallelCorpus.setProtOut(IOUtil.openFile(this.fileFrom+".protocol.txt", "utf-8"));
         }
 
         ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
@@ -142,10 +153,10 @@ public class Aligner implements Runnable {
         //store as TMX
         //IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
         //store as HTML
-        IOUtil.storeString(sFile+".par.html", "utf-8", pc.getAsParHTML());
+        IOUtil.storeString(this.fileFrom+".par.html", "utf-8", pc.getAsParHTML());
 
         boolean writeJson = true;
-        translator.storeListOfPairObjects(pc.getAsDoubleList(false), sFile, this.storeParSentInDb, writeJson);
+        translator.storeListOfPairObjects(pc.getAsDoubleList(false), this.fileFrom, this.storeParSentInDb, writeJson);
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");

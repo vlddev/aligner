@@ -32,10 +32,7 @@ import vlad.aligner.wuo.Word;
 import vlad.aligner.wuo.WordForm;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 /**
@@ -155,7 +152,54 @@ public class DbTranslator implements TranslatorInterface {
 		}
 		return ret;
 	}
-	
+
+	public Long insertBaseForm(String inf, int type, String prefix) throws SQLException {
+		Long id = -1L;
+		String sql = "INSERT INTO "+prefix+"inf (type, inf) VALUES (?,?)";
+		PreparedStatement ps = ce.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+		ps.setInt(1, type);
+		ps.setString(2, inf);
+		ps.executeUpdate();
+		ResultSet generatedKeys = ps.getGeneratedKeys();
+		if (generatedKeys.next()) {
+			id = generatedKeys.getLong(1);
+		}
+		return id;
+	}
+
+	public void insertWordForm(Long fkInf, String wf, String prefix) throws SQLException {
+		Long id = -1L;
+		String sql = "INSERT INTO "+prefix+"wf (fk_inf, wf) VALUES (?,?)";
+		PreparedStatement ps = ce.prepareStatement(sql);
+		ps.setLong(1, fkInf);
+		ps.setString(2, wf);
+		ps.executeUpdate();
+	}
+
+	public void insertToTrMap(Long fromId, Long toId, Locale langFrom, Locale langTo) throws SQLException {
+		String sTrMapTable = getTrMapTable(langFrom, langTo);
+		String sql = "INSERT INTO "+sTrMapTable+" ("+langFrom.getLanguage()+"_id, "+langTo.getLanguage()+"_id) VALUES (?,?)";
+		PreparedStatement ps = ce.prepareStatement(sql);
+		ps.setLong(1, fromId);
+		ps.setLong(2, toId);
+		ps.executeUpdate();
+	}
+
+	public void insertEntityWithTranslation(List<String> enWfs, List<String> ukWfs) throws SQLException {
+		// insert inf
+		Long enInfId = insertBaseForm(enWfs.get(0), 20, "en_");
+		Long ukInfId = insertBaseForm(ukWfs.get(0), 1, "uk_");
+		insertToTrMap(enInfId, ukInfId, new Locale("en"), new Locale("uk"));
+		// insert wf
+		for (String wf : enWfs) {
+			insertWordForm(enInfId, wf, "en_");
+		}
+		for (String wf : ukWfs) {
+			insertWordForm(ukInfId, wf, "uk_");
+		}
+		ce.commit();
+	}
+
 	public List<WordForm> getWordForms(String word, Locale lang) {
 		List<WordForm> ret = new ArrayList<WordForm>();
 		String prefix = lang.getLanguage() + "_";
@@ -317,7 +361,7 @@ public class DbTranslator implements TranslatorInterface {
 	}
 
 	public Map<String,String> getWordBasesUsedOnce(Locale langFrom, Set<String> wfList) throws Exception {
-    	return getWordBasesUsedOnce(langFrom, new ArrayList<String>(wfList));
+    	return getWordBasesUsedOnce(langFrom, new ArrayList<>(wfList));
     }
 
     /** 
@@ -371,7 +415,7 @@ public class DbTranslator implements TranslatorInterface {
 		   ce.setAutoCommit(false);
 		   int txtId = -1;
 		   if (writeToDb) {
-			   ps = this.ce.prepareStatement(sqlInsTxt, 1);
+			   ps = this.ce.prepareStatement(sqlInsTxt, Statement.RETURN_GENERATED_KEYS);
 			   ps.setString(1, textName);
 			   ps.executeUpdate();
 			   ResultSet rs = ps.getGeneratedKeys();

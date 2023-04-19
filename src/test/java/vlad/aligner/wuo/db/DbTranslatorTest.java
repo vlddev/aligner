@@ -64,4 +64,12 @@ public class DbTranslatorTest {
         Assert.assertTrue(ret.size() > 0);
         Assert.assertTrue(ret.containsKey("world"));
     }
+
+    @Test
+    public void getWordBasesUsedOnceForUpper() {
+        List<String> wfList = new ArrayList<>(Arrays.asList("anton stays stays".split(" ")));
+        Map<String, String> ret = dbTranslator.getWordBasesUsedOnce(new Locale("en"), wfList);
+        Assert.assertTrue(ret.size() > 0);
+        Assert.assertTrue(ret.containsKey("world"));
+    }
 }

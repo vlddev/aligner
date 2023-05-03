@@ -25,16 +25,17 @@ public class TextToSentencesConverterTest {
     public void defaultConverterUk() throws Exception {
         TextToSentencesConverter conv = new TextToSentencesConverter();
         conv.inputLang = "uk";
-        String text = "Сніг уже вщухав. Поставте тут, будь ласка! Мати питає, чи не хочете ви чаю?";
+        String text = "Сніг уже вщухав. Поставте тут, будь ласка! Поставте тут, Абрр. Мати питає, чи не хочете ви чаю? В 1999 р. в м. Києві.";
         List<String> sentList =  conv.defaultConverter(text);
-        Assert.assertTrue(sentList.size() == 3);
+        System.out.println(sentList);
+        Assert.assertTrue(sentList.size() == 5);
     }
 
     @Test
     public void stanfordConverterEn() {
         TextToSentencesConverter conv = new TextToSentencesConverter();
         conv.inputLang = "en";
-        String text = "Said Nancy, looking at Dr. Brown. Well, you should have told me. Do you have a question, Mr. Wells?";
+        String text = "Said Nancy, looking at Dr. Brown. Well, you should have told me. Do you have a question, Ms. Wells?";
         List<String> sentList =  conv.stanfordConverter(text);
         Assert.assertTrue(sentList.size() == 3);
     }
@@ -52,7 +53,7 @@ public class TextToSentencesConverterTest {
     public void runDefaultConverterEn() throws Exception {
         TextToSentencesConverter conv = new TextToSentencesConverter();
         conv.inputLang = "en";
-        String text = "Said Nancy, looking at Dr. Brown. Well, you should have told me. Do you have a question, Mr. Wells?";
+        String text = "Said Nancy, looking at Dr. Brown. Well, you should have told me. Do you have a question, Ms. Wells?";
         // write text to file
         try (PrintWriter out = new PrintWriter(conv.inputFile)) {
             out.println(text);
@@ -70,7 +71,7 @@ public class TextToSentencesConverterTest {
         TextToSentencesConverter conv = new TextToSentencesConverter();
         conv.inputLang = "en";
         conv.conversionMethod = TextToSentencesConverter.METHOD_STANFORD;
-        String text = "Said Nancy, looking at Dr. Brown. Well, you should have told me. Do you have a question, Mr. Wells?";
+        String text = "Said Nancy, looking at Dr. Brown. Well, you should have told me. Do you have a question, Ms. Wells?";
         try (PrintWriter out = new PrintWriter(conv.inputFile)) {
             out.println(text);
         }

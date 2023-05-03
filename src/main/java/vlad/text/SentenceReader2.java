@@ -31,7 +31,8 @@ public class SentenceReader2 {
 
 	//code of unicode character '…' is \u2026
 	private static String END_OF_SENTENCE = ".!?"+'\u2026';
-	private static String[] NOT_THE_END = {"Mrs.","Dr.","Mr.","...","..","хв."};
+	private static String[] NOT_THE_END_EN = {"Mrs.","Dr.","Mr.","Ms.","...",".."};
+	private static String[] NOT_THE_END_UK = {"хв", " тис", "див", "рр", "ст", "м", "с", "р", "с", "н", "е"};
 
     private StringBuffer sbText;
 	private int pos = 0;
@@ -60,15 +61,23 @@ public class SentenceReader2 {
 					// TODO ignore numbers like 123.123 
 					boolean bException = false;
 					String sentence = ret.toString();
-					for (String s : NOT_THE_END) {
+					for (String s : NOT_THE_END_EN) {
 						if (sentence.endsWith(s)) {
 							bException = true;
 							break;
 						}
 					}
+					String lastWord = getLastWord(sentence);
+					if (!bException) {
+						for (String s : NOT_THE_END_UK) {
+							if (s.equals(lastWord)) {
+								bException = true;
+								break;
+							}
+						}
+					}
 					if (!bException) {
 						// get last word, if it has one latter in uppercase -> it is not the EOS
-						String lastWord = getLastWord(sentence);
 						if (lastWord.length() == 1 && lastWord.toUpperCase().equals(lastWord)) {
 							bException = true;
 						}

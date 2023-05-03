@@ -9,3 +9,4 @@ gradlew.bat
 aligner.h2.mv.db
 /src/main/resources/aligner.h2.mv.db
 /src/main/resources/sql/h2-2.1.214.jar
+/aligner-script.sql

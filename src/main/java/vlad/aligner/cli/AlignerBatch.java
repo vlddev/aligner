@@ -39,6 +39,8 @@ public class AlignerBatch implements Runnable {
     @Option(names = { "-d", "--data" }, description = "additional data to be loaded into memory db")
     String dataFile = "data.txt";
 
+    String libRoot = "";
+
     boolean storeParSentInDb = false;
 
     boolean writeProtocol = false;
@@ -103,17 +105,17 @@ public class AlignerBatch implements Runnable {
 
     public void alignerBatch(String inputFile) throws Exception {
         List<String> batchData = Files.readAllLines(new File(inputFile).toPath(), Charset.defaultCharset());
-        for (String batchJob : batchData) {
-            doBatchJob(batchJob);
+        for (String batchJobFile : batchData) {
+            doBatchJob(libRoot+batchJobFile);
         }
     }
 
-    public void doBatchJob(String batchJob) {
-        Path fileFrom = Path.of(batchJob + "_en.spl");
+    public void doBatchJob(String batchJobFile) {
+        Path fileFrom = Path.of(batchJobFile + "_en.spl");
         String langFrom = "en";
-        Path fileTo = Path.of(batchJob + "_uk.spl");
+        Path fileTo = Path.of(batchJobFile + "_uk.spl");
         String langTo = "uk";
-        String outFile = batchJob + "_en_uk.spl";
+        String outFile = batchJobFile + "_en_uk.spl";
         boolean doJob = true;
         if (!Files.exists(fileFrom)) {
             logger.warn("From file '{}' not exists.", fileFrom);
@@ -125,13 +127,13 @@ public class AlignerBatch implements Runnable {
         }
         if (doJob) {
             try {
-                logger.info("Run job '{}'.", batchJob);
+                logger.info("Run job '{}'.", batchJobFile);
                 alignTranslations(Files.readString(fileFrom), langFrom, Files.readString(fileTo), langTo, outFile);
             } catch (Exception e) {
                 logger.error("Error in job.", e);
             }
         } else {
-            logger.warn("Job '{}' ignored.", batchJob);
+            logger.warn("Job '{}' ignored.", batchJobFile);
         }
     }
 
@@ -164,27 +166,9 @@ public class AlignerBatch implements Runnable {
 
         ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
         pc.setName("test");
+        pc.showSentIndex = true;
 
-        pc.makeMappingWithWordsUsedOnce(translator);
-
-        List<Integer> badSplitPoints = pc.getBadSplitPoints();
-        System.out.println("=== Quality ===");
-        System.out.println("Split points: " + pc.getMapping().size());
-        System.out.println("Bad split points: " + badSplitPoints.size());
-        int prevBadSplitPointsSize = badSplitPoints.size();
-        int step = 1;
-        do {
-            prevBadSplitPointsSize = badSplitPoints.size();
-            System.out.println("   Step "+step+". Remove bad split points. Split ones more.");
-            badSplitPoints.forEach(ind -> pc.removeSplitPoint(ind));
-            pc.makeMappingWithWordsUsedOnce(translator);
-            badSplitPoints = pc.getBadSplitPoints();
-            System.out.println("   Split points: " + pc.getMapping().size());
-            System.out.println("   Bad split points: " + badSplitPoints.size());
-            step++;
-        } while (prevBadSplitPointsSize > badSplitPoints.size()
-                && badSplitPoints.size() > 10
-                && step < 6);
+        pc.align(translator, 5, 10);
 
         System.out.println("==== Store results ====");
         //store as XML

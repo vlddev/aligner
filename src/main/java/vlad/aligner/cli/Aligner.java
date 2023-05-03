@@ -128,25 +128,10 @@ public class Aligner implements Runnable {
 
         //pc.dumpUsageStatsForWordsNotInDict(translator);
 
-        pc.makeMappingWithWordsUsedOnce(translator);
+        pc.align(translator, 5, 10);
 
         //dump for debugging
         //pc.dumpMapping();
-
-        List<Integer> badSplitPoints = pc.getBadSplitPoints();
-        System.out.println("=== Quality ===");
-        System.out.println("Split points: " + pc.getMapping().size());
-        System.out.println("Bad split points: " + badSplitPoints.size());
-        if (badSplitPoints.size() > 0 && pc.getMapping().size() > badSplitPoints.size() * 5) {
-            System.out.println("   Remove bad split points. Split ones more.");
-            badSplitPoints.forEach((ind) -> {
-                pc.removeSplitPoint(ind);
-            });
-            pc.makeMappingWithWordsUsedOnce(translator);
-            badSplitPoints = pc.getBadSplitPoints();
-            System.out.println("   Split points: " + pc.getMapping().size());
-            System.out.println("   Bad split points: " + badSplitPoints.size());
-        }
 
         //store as XML
         //IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
@@ -167,7 +152,6 @@ public class Aligner implements Runnable {
         System.out.println("Division points - "+ pc.getCorpusPairCount());
         System.out.println("Done in "+ runTime + " sec.");
         ceTr.close();
-
     }
 
     public static void main(String[] args) {

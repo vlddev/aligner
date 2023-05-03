@@ -55,7 +55,8 @@ public class Aligner {
 	}
 
     public static String alignTextsAsHtmlTable(String sTextFrom, Locale locFrom, String sTextTo, Locale locTo, Connection c) throws Exception {
-        return alignTexts(sTextFrom, locFrom, sTextTo, locTo, c).getAsHtmlTable();
+        ParallelCorpus pc = alignTexts(sTextFrom, locFrom, sTextTo, locTo, c);
+        return pc.getAsHtmlTable(pc.getAsDoubleList(true));
     }
 
     public static List<List<String>> alignTextsAsDoubleList(String sTextFrom, Locale locFrom, String sTextTo, Locale locTo, Connection c) throws Exception {

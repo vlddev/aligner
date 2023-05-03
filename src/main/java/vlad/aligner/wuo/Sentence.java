@@ -148,43 +148,44 @@ public class Sentence {
 	}
 
 	public String getContentWithMarkedWord(String word) {
-		String wordLowerCase = word.toLowerCase();
 		StringBuffer sb = new StringBuffer(content);
-		if (contentLowerCase.indexOf(wordLowerCase) == contentLowerCase.lastIndexOf(wordLowerCase)) {
-			//слово зустрічається лише раз
-			sb.insert(contentLowerCase.indexOf(wordLowerCase) + word.length(), "</b>");
-			sb.insert(contentLowerCase.indexOf(wordLowerCase), "<b>");
-		} else {
-			// слово зустрічається декілька раз, потрібно виділити переше повне слово (а не частину слова)
-			
-			int wPos = -1;
-			int resPos = -1;
-			String sCharBefore;
-			String sCharAfter;
-			do {
-				wPos = contentLowerCase.indexOf(wordLowerCase, wPos+1);
-				if (wPos > -1) {
-					if (wPos == 0) { //first word in text
-						sCharBefore = " ";
-					} else {
-						sCharBefore = contentLowerCase.substring(wPos-1, wPos);
-					}
-					if (wPos+word.length() == contentLowerCase.length()) { //last word in text
-						sCharAfter = " ";
-					} else {
-						sCharAfter = contentLowerCase.substring(wPos+word.length(), wPos+word.length()+1);
-					}
-					if (Corpus.DIVIDER_CHARS.indexOf(sCharBefore) > -1 && Corpus.DIVIDER_CHARS.indexOf(sCharAfter) > -1) {
-						resPos = wPos;
-					}
-				}
-			} while (resPos == -1 && wPos > -1);
-			
-			if (resPos > -1 ) {
-				sb.insert(resPos + word.length(), "</b>");
-				sb.insert(resPos, "<b>");
+		if (word.length() > 0) {
+			String wordLowerCase = word.toLowerCase();
+			if (contentLowerCase.indexOf(wordLowerCase) == contentLowerCase.lastIndexOf(wordLowerCase)) {
+				//слово зустрічається лише раз
+				sb.insert(contentLowerCase.indexOf(wordLowerCase) + word.length(), "</b>");
+				sb.insert(contentLowerCase.indexOf(wordLowerCase), "<b>");
 			} else {
-				// слова не знайдено 
+				// слово зустрічається декілька раз, потрібно виділити переше повне слово (а не частину слова)
+				int wPos = -1;
+				int resPos = -1;
+				String sCharBefore;
+				String sCharAfter;
+				do {
+					wPos = contentLowerCase.indexOf(wordLowerCase, wPos+1);
+					if (wPos > -1) {
+						if (wPos == 0) { //first word in text
+							sCharBefore = " ";
+						} else {
+							sCharBefore = contentLowerCase.substring(wPos-1, wPos);
+						}
+						if (wPos+word.length() == contentLowerCase.length()) { //last word in text
+							sCharAfter = " ";
+						} else {
+							sCharAfter = contentLowerCase.substring(wPos+word.length(), wPos+word.length()+1);
+						}
+						if (Corpus.DIVIDER_CHARS.indexOf(sCharBefore) > -1 && Corpus.DIVIDER_CHARS.indexOf(sCharAfter) > -1) {
+							resPos = wPos;
+						}
+					}
+				} while (resPos == -1 && wPos > -1);
+
+				if (resPos > -1 ) {
+					sb.insert(resPos + word.length(), "</b>");
+					sb.insert(resPos, "<b>");
+				} else {
+					// слова не знайдено
+				}
 			}
 		}
 		return sb.toString();

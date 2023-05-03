@@ -429,7 +429,8 @@ public class DbTranslator implements TranslatorInterface {
 			  String enSent = cleanupSentence(pair.get(0).trim());
 			  String ukSent = cleanupSentence(pair.get(1).trim());
 			  if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
-				  float mq = trExtractor.extractTranslations(ukSent, enSent);
+				  JSONObject parSentJson = trExtractor.extractTranslations(ukSent, enSent);
+				  float mq = parSentJson.getFloat("matchq");
 				  if (writeToDb) {
 					  ps.clearParameters();
 					  ps.setInt(1, txtId);
@@ -440,7 +441,7 @@ public class DbTranslator implements TranslatorInterface {
 				  }
 
 				  if (writeToJson) {
-					  // TODO: get Json from trExtractor.extractTranslations
+					  // TODO: use parSentJson
 					  JSONObject jsonObject = new JSONObject().put("en", enSent).put("uk", ukSent).put("matchq", mq);
 					  //System.out.println(jsonObject.toString(1));
 				  }

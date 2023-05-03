@@ -25,6 +25,7 @@
 
 package vlad.aligner.wuo;
 
+import vlad.text.StringReplacer;
 import vlad.util.IOUtil;
 
 import java.io.IOException;
@@ -41,6 +42,8 @@ public class ParallelCorpus {
 	private Corpus originalCorpus;
 	private Corpus translatedCorpus;
     private String name;
+
+	public boolean showSentIndex = false;
 	
 	//output channel for output of parallelization process information
 	private static PrintWriter protOut = null;
@@ -118,10 +121,34 @@ public class ParallelCorpus {
 		}
 		return ret;
 	}
-	
+
+	public void align(TranslatorInterface translator, int maxSplitSteps, int stopBadSplitPointCount) {
+		makeMappingWithWordsUsedOnce(translator);
+
+		List<Integer> badSplitPoints = getBadSplitPoints();
+		System.out.println("=== Quality ===");
+		System.out.println("Split points: " + getMapping().size());
+		System.out.println("Bad split points: " + badSplitPoints.size());
+		int prevBadSplitPointsSize;
+		int step = 1;
+		do {
+			prevBadSplitPointsSize = badSplitPoints.size();
+			System.out.println("   Step "+step+". Remove bad split points. Split ones more.");
+			badSplitPoints.forEach(ind -> removeSplitPoint(ind));
+			makeMappingWithWordsUsedOnce(translator);
+			badSplitPoints = getBadSplitPoints();
+			System.out.println("   Split points: " + getMapping().size());
+			System.out.println("   Bad split points: " + badSplitPoints.size());
+			step++;
+		} while (prevBadSplitPointsSize > badSplitPoints.size()
+				&& badSplitPoints.size() > stopBadSplitPointCount
+				&& step <= maxSplitSteps);
+	}
+
 	public void makeMappingWithWordsUsedOnce(TranslatorInterface translator) {
 
 		boolean bEnd = false;
+		boolean bIgnoreCase = true;
 		if (protOut != null ) {
 			protOut.println("== makeMappingWithWordsUsedOnce (stpos1 : "+getOriginalCorpus().getStartPosInParentCorpus()
 					+ ", stpos2 : "+getTranslatedCorpus().getStartPosInParentCorpus()+") ==");
@@ -135,11 +162,11 @@ public class ParallelCorpus {
 	
 				// Text1
 				// малі й великі букви ігноруються при створенні списку нижче
-				List<String> listWfOnce1 = originalCorpus.getWordsUsedOnce(true);
+				List<String> listWfOnce1 = originalCorpus.getWordsUsedOnce(bIgnoreCase);
 				//HashMap (base (key), wf (value) ) of words used once
 				Map<String, String> htBaseWf1;
 				try {
-					htBaseWf1 = translator.getWordBasesUsedOnce(originalCorpus.getLang(), new HashSet<String>(listWfOnce1));
+					htBaseWf1 = translator.getWordBasesUsedOnce(originalCorpus.getLang(), listWfOnce1);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -154,10 +181,10 @@ public class ParallelCorpus {
 				List<String> listWords1 = sortBasesByWfOrderInList(htBaseWf1, listWfOnce1);
 	
 				// text2
-				List<String> listWfOnce2 = translatedCorpus.getWordsUsedOnce(true);
+				List<String> listWfOnce2 = translatedCorpus.getWordsUsedOnce(bIgnoreCase);
 				Map<String, String> htBaseWf2;
 				try {
-					htBaseWf2 = translator.getWordBasesUsedOnce(translatedCorpus.getLang(), new HashSet<String>(listWfOnce2));
+					htBaseWf2 = translator.getWordBasesUsedOnce(translatedCorpus.getLang(), listWfOnce2);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -169,7 +196,6 @@ public class ParallelCorpus {
 					htBaseWf2.remove(sStopword);
 				}
 
-				
 				// слова відсортовані по розміщенню відповідних словоформ в тексті
 				List<String> listWords2 = sortBasesByWfOrderInList(htBaseWf2, listWfOnce2);
 	
@@ -475,7 +501,7 @@ public class ParallelCorpus {
 		}
 		return new ParallelCorpus(corp1, corp2);
 	}
-	
+
 	// TODO: rewrite
 	public List<Integer> getBadSplitPoints() {
 		List ret = new ArrayList();
@@ -484,59 +510,51 @@ public class ParallelCorpus {
 		SplitPoint prevSplitPoint = null;
 		SplitPoint splitPoint = null;
 		int lastGoodPairs = 0;
-		List maybeInvalid = new ArrayList();
-  
+		List<Integer> maybeInvalid = new ArrayList();
+
 		int indFrom1;
 		int indFrom2;
 		int indTo1;
 		int indTo2;
-		for(Iterator var12 = this.mapping.keySet().iterator(); var12.hasNext(); prevSplitPoint = splitPoint) {
-		   Integer ind = (Integer)var12.next();
-		   splitPoint = (SplitPoint)this.mapping.get(ind);
-		   indFrom1 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus1 + 1;
-		   indTo1 = splitPoint.sentenceIndCorpus1;
-		   indFrom2 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus2 + 1;
-		   indTo2 = splitPoint.sentenceIndCorpus2;
-		   if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-			  if (Math.abs(indTo1 - indFrom1 - (indTo2 - indFrom2)) > maxSentDiff) {
-				 lastGoodPairs = 0;
-			  } else {
-				 ++lastGoodPairs;
-			  }
-		   }
-  
-		   if (lastGoodPairs < minLastGood) {
-			  if (lastGoodPairs > 0) {
-				 maybeInvalid.add(ind);
-			  } else {
-				 if (maybeInvalid.size() > 0) {
-					Iterator var14 = maybeInvalid.iterator();
-  
-					while(var14.hasNext()) {
-					   Integer mInd = (Integer)var14.next();
-					   ret.add(mInd);
-					}
-				 }
-  
-				 maybeInvalid.clear();
-				 ret.add(ind);
-			  }
-		   } else {
-			  maybeInvalid.clear();
-		   }
-  
-		   ++lastGoodPairs;
+		for (Integer splitInd : this.mapping.keySet()) {
+			splitPoint = (SplitPoint) this.mapping.get(splitInd);
+			indFrom1 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus1 + 1;
+			indTo1 = splitPoint.sentenceIndCorpus1;
+			indFrom2 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus2 + 1;
+			indTo2 = splitPoint.sentenceIndCorpus2;
+			if (indTo1 > indFrom1 || indTo2 > indFrom2) {
+				if (Math.abs(indTo1 - indFrom1 - (indTo2 - indFrom2)) > maxSentDiff) {
+					lastGoodPairs = 0;
+				} else {
+					++lastGoodPairs;
+				}
+			}
+
+			if (lastGoodPairs < minLastGood) {
+				if (lastGoodPairs > 0) {
+					maybeInvalid.add(splitInd);
+				} else {
+					maybeInvalid.forEach(e -> ret.add(e));
+					maybeInvalid.clear();
+					ret.add(splitInd);
+				}
+			} else {
+				maybeInvalid.clear();
+			}
+
+			prevSplitPoint = splitPoint;
+			++lastGoodPairs;
 		}
-  
+
 		if (splitPoint != null) {
-		   indFrom1 = splitPoint.sentenceIndCorpus1 + 1;
-		   indTo1 = this.originalCorpus.getSentenceList().size();
-		   indFrom2 = splitPoint.sentenceIndCorpus2 + 1;
-		   indTo2 = this.translatedCorpus.getSentenceList().size();
-		   if (indTo1 <= indFrom1 && indTo2 > indFrom2) {
-		   }
+			indFrom1 = splitPoint.sentenceIndCorpus1 + 1;
+			indTo1 = this.originalCorpus.getSentenceList().size();
+			indFrom2 = splitPoint.sentenceIndCorpus2 + 1;
+			indTo2 = this.translatedCorpus.getSentenceList().size();
+			if (indTo1 <= indFrom1 && indTo2 > indFrom2) {
+			}
 		}
-  
+
 		return ret;
 	}
 
@@ -895,17 +913,27 @@ public class ParallelCorpus {
         StringBuffer ret = new StringBuffer();
         ret.append("<html><body>");
         ret.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
-        ret.append(getAsHtmlTable());
+        ret.append(getAsHtmlTable(getAsDoubleList(true)));
         ret.append("</body></html>");
         return ret.toString();
     }
 
-    public String getAsHtmlTable() {
+	public String getAsAnonymizedParHTML(Map<String, String> origReplacements, Map<String, String> translationReplacements) {
+		StringBuffer ret = new StringBuffer();
+		ret.append("<html><body>");
+		ret.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
+		List<List<String>> doubleList = getAsDoubleList(true);
+		ret.append(getAsHtmlTable(anonymizeDoubleList(doubleList, origReplacements, translationReplacements)));
+		ret.append("</body></html>");
+		return ret.toString();
+	}
+
+	public String getAsHtmlTable(List<List<String>> doubleList) {
 		StringBuffer ret = new StringBuffer();
 
 		ret.append("<table border=\"1\">");
 
-        for (List<String> pairList : getAsDoubleList(true)) {
+        for (List<String> pairList : doubleList) {
             ret.append("<tr><td>");
             String val = "";
             if (pairList != null && pairList.size() > 0) {
@@ -928,115 +956,100 @@ public class ParallelCorpus {
 		return ret.toString();
 	}
 
-    public List<List<String>> getAsDoubleList(boolean bMarkSplitPoints) {
+	public List<List<String>> anonymizeDoubleList(List<List<String>> list, Map<String, String> origReplacements, Map<String, String> translationReplacements) {
+		for (List<String> elem : list) {
+			// original
+			elem.set(0, StringReplacer.replaceWords(elem.get(0), origReplacements));
+			// translation
+			elem.set(0, StringReplacer.replaceWords(elem.get(0), translationReplacements));
+		}
+		return list;
+	}
+
+	public List<List<String>> getAsDoubleList(boolean bMarkSplitPoints) {
         List<List<String>> ret = new ArrayList<List<String>>();
         SplitPoint prevSplitPoint = null;
         SplitPoint splitPoint = null;
-        int indFrom1, indFrom2, indTo1, indTo2;
 
         for (Integer ind: mapping.keySet()) {
             splitPoint = mapping.get(ind);
-            indFrom1 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus1+1;
-            indTo1 = splitPoint.sentenceIndCorpus1;
+			ArrayList<String> pairList = preparePairBetweenSplitPoints(prevSplitPoint, splitPoint);
+			if (pairList.size() > 0) {
+				ret.add(pairList);
+			}
 
-            indFrom2 = (prevSplitPoint == null) ? 0 : prevSplitPoint.sentenceIndCorpus2+1;
-            indTo2 = splitPoint.sentenceIndCorpus2;
-
-            if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-                //додати блок текст-переклад якщо хоча б одна з частин непорожня
-                ArrayList pairList =  new ArrayList<String>(2);
-                StringBuffer cellText = new StringBuffer();
-                //original text
-                for (int i = indFrom1; i < indTo1; i++) {
-                    cellText.append(originalCorpus.getSentenceList().get(i).getContent());
-                    cellText.append(IOUtil.ln);
-                }
-                pairList.add(cellText.toString());
-
-                //translation
-                cellText = new StringBuffer();
-                for (int i = indFrom2; i < indTo2; i++) {
-                    cellText.append(translatedCorpus.getSentenceList().get(i).getContent());
-                    cellText.append(IOUtil.ln);
-                }
-                pairList.add(cellText.toString());
-                ret.add(pairList);
-            }
-
-            ArrayList pairList =  new ArrayList<String>(2);
+			// Sentence at split point
+            pairList =  new ArrayList<>(2);
             //original text
+			String origText = originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContent();
             if (bMarkSplitPoints) {
-                pairList.add(originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContentWithMarkedWord(splitPoint.splitWf1));
-            } else {
-                pairList.add(originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContent());
+				origText = originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1).getContentWithMarkedWord(splitPoint.splitWf1);
             }
+			if (showSentIndex) {
+				origText = "["+splitPoint.sentenceIndCorpus1 + "] " + origText;
+			}
+			pairList.add(origText);
 
             //translation
+			String trText = translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContent();
             if (bMarkSplitPoints) {
-                pairList.add(translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContentWithMarkedWord(splitPoint.splitWf2));
-            } else {
-                pairList.add(translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContent());
+				trText = translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2).getContentWithMarkedWord(splitPoint.splitWf2);
             }
+			if (showSentIndex) {
+				trText = "["+splitPoint.sentenceIndCorpus2 + "] " + trText;
+			}
+			pairList.add(trText);
+
             ret.add(pairList);
 
             prevSplitPoint = splitPoint;
         }
         //add last text
         if (splitPoint != null) {
-            indFrom1 = splitPoint.sentenceIndCorpus1+1;
-            indTo1 = originalCorpus.getSentenceList().size();
-
-            indFrom2 = splitPoint.sentenceIndCorpus2+1;
-            indTo2 = translatedCorpus.getSentenceList().size();
-
-            if (indTo1 > indFrom1 || indTo2 > indFrom2) {
-                //додати блок текст-переклад якщо хоча б одна з частин непорожня
-                ArrayList pairList =  new ArrayList<String>(2);
-                StringBuffer cellText = new StringBuffer();
-                //original text
-                for (int i = indFrom1; i < indTo1; i++) {
-                    cellText.append(originalCorpus.getSentenceList().get(i).getContent());
-                    cellText.append(IOUtil.ln);
-                }
-                pairList.add(cellText.toString());
-
-                //translation
-                cellText = new StringBuffer();
-                for (int i = indFrom2; i < indTo2; i++) {
-                    cellText.append(translatedCorpus.getSentenceList().get(i).getContent());
-                    cellText.append(IOUtil.ln);
-                }
-                pairList.add(cellText.toString());
+			SplitPoint spEndOfText = new SplitPoint(originalCorpus.getSentenceList().size(),
+					translatedCorpus.getSentenceList().size(), "", "");
+			ArrayList pairList = preparePairBetweenSplitPoints(splitPoint, spEndOfText);
+            if (pairList.size() > 0) {
                 ret.add(pairList);
             }
         } else { //no split points
-            indTo1 = originalCorpus.getSentenceList().size();
-            indTo2 = translatedCorpus.getSentenceList().size();
-
-            if (indTo1 > 0 || indTo2 > 0) {
-                //додати блок текст-переклад якщо хоча б одна з частин непорожня
-                ArrayList pairList =  new ArrayList<String>(2);
-                StringBuffer cellText = new StringBuffer();
-                //original text
-                for (int i = 0; i < indTo1; i++) {
-                    cellText.append(originalCorpus.getSentenceList().get(i).getContent());
-                    cellText.append(IOUtil.ln);
-                }
-                pairList.add(cellText.toString());
-
-                //translation
-                cellText = new StringBuffer();
-                for (int i = 0; i < indTo2; i++) {
-                    cellText.append(translatedCorpus.getSentenceList().get(i).getContent());
-                    cellText.append(IOUtil.ln);
-                }
-                pairList.add(cellText.toString());
-                ret.add(pairList);
-            }
+			SplitPoint spEndOfText = new SplitPoint(originalCorpus.getSentenceList().size(),
+					translatedCorpus.getSentenceList().size(), "", "");
+			ArrayList pairList = preparePairBetweenSplitPoints(null, spEndOfText);
+			if (pairList.size() > 0) {
+				ret.add(pairList);
+			}
         }
 
         return ret;
     }
+
+	private ArrayList<String> preparePairBetweenSplitPoints(SplitPoint spFrom, SplitPoint spTo) {
+		ArrayList pairList =  new ArrayList<String>(2);
+		int indFrom1 = (spFrom == null) ? 0 : spFrom.sentenceIndCorpus1+1;
+		int indTo1 = spTo.sentenceIndCorpus1;
+
+		int indFrom2 = (spFrom == null) ? 0 : spFrom.sentenceIndCorpus2+1;
+		int indTo2 = spTo.sentenceIndCorpus2;
+
+		if (indTo1 > indFrom1 || indTo2 > indFrom2) {
+			//додати блок текст-переклад якщо хоча б одна з частин непорожня
+			StringBuffer cellText = new StringBuffer();
+			//original text
+			for (int i = indFrom1; i < indTo1; i++) {
+				cellText.append(originalCorpus.getSentenceList().get(i).getContent()).append(IOUtil.ln);
+			}
+			pairList.add(cellText.toString());
+
+			//translation
+			cellText = new StringBuffer();
+			for (int i = indFrom2; i < indTo2; i++) {
+				cellText.append(translatedCorpus.getSentenceList().get(i).getContent()).append(IOUtil.ln);
+			}
+			pairList.add(cellText.toString());
+		}
+		return pairList;
+	}
 
 	private class SplitPoint {
 		int sentenceIndCorpus1;

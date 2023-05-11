@@ -34,18 +34,18 @@ import java.util.Set;
  * @author Vlad
  */
 public interface TranslatorInterface {
-	public List<String> checkDB(Locale l1, Locale l2);
+	List<String> checkDB(Locale l1, Locale l2);
 	
-	public List<Word> getBaseForm(String wf, Locale lang);
+	List<Word> getBaseForm(String wf, Locale lang);
 
-	public List<WordForm> getWordForms(String word, Locale lang);
+	List<WordForm> getWordForms(String word, Locale lang);
 
-	public List<Word> getTranslation(String word, Locale langFrom, Locale langTo);
+	List<Word> getTranslation(String word, Locale langFrom, Locale langTo);
 
-	public List<Word> getTranslation(Word word, Locale langFrom, Locale langTo);
+	List<Word> getTranslation(Word word, Locale langFrom, Locale langTo);
 	
-	public List<Word> getTranslation(List<Word> wfList, Locale langFrom, Locale langTo);
+	List<Word> getTranslation(List<Word> wfList, Locale langFrom, Locale langTo);
 
-	public Map<String,String> getWordBasesUsedOnce(Locale langFrom, Set<String> wfList) throws Exception;
-	public Map<String,String> getWordBasesUsedOnce(Locale langFrom, List<String> wfList) throws Exception;
+	Map<String,String> getWordBasesUsedOnce(Locale langFrom, Set<String> wfList) throws Exception;
+	Map<String,String> getWordBasesUsedOnce(Locale langFrom, List<String> wfList) throws Exception;
 }

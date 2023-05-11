@@ -30,6 +30,7 @@ import vlad.aligner.wuo.TrExtractor;
 import vlad.aligner.wuo.TranslatorInterface;
 import vlad.aligner.wuo.Word;
 import vlad.aligner.wuo.WordForm;
+import vlad.util.Util;
 
 import java.io.File;
 import java.sql.*;
@@ -426,8 +427,8 @@ public class DbTranslator implements TranslatorInterface {
 			   ps = ce.prepareStatement(sql);
 		   }
 		   for (List<String> pair : pairList) {
-			  String enSent = cleanupSentence(pair.get(0).trim());
-			  String ukSent = cleanupSentence(pair.get(1).trim());
+			  String enSent = Util.cleanupSentence(pair.get(0).trim());
+			  String ukSent = Util.cleanupSentence(pair.get(1).trim());
 			  if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
 				  JSONObject parSentJson = trExtractor.extractTranslations(ukSent, enSent);
 				  float mq = parSentJson.getFloat("matchq");
@@ -447,7 +448,6 @@ public class DbTranslator implements TranslatorInterface {
 				  }
 			  }
 		   }
-  
 		   ce.commit();
 		} catch (SQLException ex) {
 		   ex.printStackTrace();
@@ -456,19 +456,4 @@ public class DbTranslator implements TranslatorInterface {
 		   DAO.closeStatement(ps);
 		}
   	}
-
-	private String cleanupSentence(String sent) {
-		String ret = sent.replace("\n", " ").replace("  ", " ");
-		int firstLetterPos = 0;
-		for (int i = 0; i < ret.length(); i++) {
-			if (Character.isLetterOrDigit(ret.charAt(i))) {
-				firstLetterPos = i;
-				break;
-			}
-		}
-		if (firstLetterPos > 0) {
-			ret = ret.substring(firstLetterPos);
-		}
-		return ret;
-	}
 }

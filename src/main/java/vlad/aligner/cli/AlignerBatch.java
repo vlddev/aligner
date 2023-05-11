@@ -69,7 +69,10 @@ public class AlignerBatch implements Runnable {
                     connection.close();
                 }
                 this.connectionMemDb = DriverManager.getConnection(this.inMemoryDb, "", "");
-                connectionMemDb.createStatement().execute("RUNSCRIPT FROM '"+inMemoryDbScript+"'");
+                DbTranslator translator = new DbTranslator(connectionMemDb);
+                if (translator.checkDB(new Locale("en"), new Locale("uk")).size() > 0) {
+                    connectionMemDb.createStatement().execute("RUNSCRIPT FROM '"+inMemoryDbScript+"'");
+                }
                 long runTime = ((new Date()).getTime() - start.getTime())/1000;
                 logger.info("InMemory DB inited in {} sec.", runTime);
             } catch (SQLException e) {
@@ -106,6 +109,7 @@ public class AlignerBatch implements Runnable {
     public void alignerBatch(String inputFile) throws Exception {
         List<String> batchData = Files.readAllLines(new File(inputFile).toPath(), Charset.defaultCharset());
         for (String batchJobFile : batchData) {
+            //doSplFile(libRoot+batchJobFile);
             doBatchJob(libRoot+batchJobFile);
         }
     }
@@ -134,6 +138,21 @@ public class AlignerBatch implements Runnable {
             }
         } else {
             logger.warn("Job '{}' ignored.", batchJobFile);
+        }
+    }
+
+    public void doSplFile(String batchJobFile) {
+        // convert uk
+        TextToSentencesConverter splConverter = new TextToSentencesConverter();
+        splConverter.overwriteOutput = true;
+        splConverter.inputFile = batchJobFile+"_uk.txt";
+        splConverter.outputFile = batchJobFile+"_uk.spl";
+        Path inFile = Path.of(splConverter.inputFile);
+        if (!Files.exists(inFile)) {
+            logger.warn("From file '{}' not exists.", splConverter.inputFile);
+        } else {
+            logger.info("Convert Txt to Spl '{}'.", batchJobFile);
+            splConverter.run();
         }
     }
 

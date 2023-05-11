@@ -26,7 +26,9 @@
 package vlad.aligner.wuo;
 
 import vlad.text.StringReplacer;
+import vlad.util.CountHashtable;
 import vlad.util.IOUtil;
+import vlad.util.Util;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -143,6 +145,8 @@ public class ParallelCorpus {
 		} while (prevBadSplitPointsSize > badSplitPoints.size()
 				&& badSplitPoints.size() > stopBadSplitPointCount
 				&& step <= maxSplitSteps);
+
+		makeMappingForEqualSubcorpus();
 	}
 
 	public void makeMappingWithWordsUsedOnce(TranslatorInterface translator) {
@@ -186,7 +190,6 @@ public class ParallelCorpus {
 				try {
 					htBaseWf2 = translator.getWordBasesUsedOnce(translatedCorpus.getLang(), listWfOnce2);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 					return;
 				}
@@ -448,11 +451,47 @@ public class ParallelCorpus {
 		} while (!bEnd);
 	}
 
+	public void makeMappingForEqualSubcorpus() {
+		int cnt = getCorpusPairCount();
+		List<ParallelCorpus> pcList = new ArrayList<ParallelCorpus>();
+		for (int i = 0; i < cnt; i++) {
+			ParallelCorpus pc = getCorpusPairAt(i);
+			int origCorpLen = pc.getOriginalCorpus().getSentenceList().size();
+			int trCorpLen = pc.getTranslatedCorpus().getSentenceList().size();
+			if (origCorpLen > 1 && trCorpLen > 1 && origCorpLen == trCorpLen) {
+				TreeMap<Integer, ParallelCorpus.SplitPoint> newMapping = new TreeMap<Integer, ParallelCorpus.SplitPoint>();
+				for (int j = 0; j < origCorpLen; j++) {
+					pc.addSplitPointToMapping(new ParallelCorpus.SplitPoint(j,j,"",""));
+				}
+				pcList.add(pc);
+			}
+		}
+		// додати новостворені поділи до вже існуючого
+		TreeMap<Integer,SplitPoint> newMapping = new TreeMap<Integer,SplitPoint>();
+		for (ParallelCorpus pc : pcList) {
+			for (SplitPoint sp : pc.getMapping().values()) {
+				int delta1 = pc.getOriginalCorpus().getStartPosInParentCorpus();
+				int delta2 = pc.getTranslatedCorpus().getStartPosInParentCorpus();
+				if (delta1 > -1 && delta2 > -1) {
+					newMapping.put(sp.sentenceIndCorpus1 + delta1,
+							new SplitPoint(sp.sentenceIndCorpus1 + delta1, sp.sentenceIndCorpus2 + delta2,
+									sp.splitWf1, sp.splitWf2));
+				}
+			}
+		}
+
+		int addedCount = 0;
+		for (Integer key : newMapping.keySet()) {
+			if (addSplitPointToMapping(newMapping.get(key))) addedCount++;
+		}
+		System.out.println("MappingForEqualParts: Added "+addedCount+" new SplitPoints");
+	}
+
 	public int getCorpusPairCount() {
 		return mapping.size() + 1;
 	}
 	
-	private ParallelCorpus getCorpusPairAt(int pos) {
+	protected ParallelCorpus getCorpusPairAt(int pos) {
 		Corpus corp1 = null;
 		Corpus corp2 = null;
 		
@@ -517,7 +556,7 @@ public class ParallelCorpus {
 		int indTo1;
 		int indTo2;
 		for (Integer splitInd : this.mapping.keySet()) {
-			splitPoint = (SplitPoint) this.mapping.get(splitInd);
+			splitPoint = this.mapping.get(splitInd);
 			indFrom1 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus1 + 1;
 			indTo1 = splitPoint.sentenceIndCorpus1;
 			indFrom2 = prevSplitPoint == null ? 0 : prevSplitPoint.sentenceIndCorpus2 + 1;
@@ -555,6 +594,62 @@ public class ParallelCorpus {
 			}
 		}
 
+		return ret;
+	}
+
+	public List<Map.Entry<String, Integer>> getStatisticalEntityTranslations() {
+		List<String> origEntities = originalCorpus.extractEntities(EntityProcessor.getCommonWords(originalCorpus.getLang()), 3);
+		List<String> trEntities = translatedCorpus.extractEntities(EntityProcessor.getCommonWords(translatedCorpus.getLang()), 3);
+
+		Map<String, List<String>> origEntityGroups = EntityProcessor.groupUkEntities(origEntities);
+		Map<String, List<String>> trEntityGroups = EntityProcessor.groupUkEntities(trEntities);
+
+		Map<String, String> origReverseEntityDict = EntityProcessor.reverseDict(origEntityGroups);
+		Map<String, String> trReverseEntityDict = EntityProcessor.reverseDict(trEntityGroups);
+
+		CountHashtable<String> learnDictStats = new CountHashtable<>();
+
+		for (List<Sentence> pair : getPairSentences()) {
+			String origSent = Util.cleanupSentence(pair.get(0).getContent().trim());
+			String trSent = Util.cleanupSentence(pair.get(1).getContent().trim());
+			if (origSent.length() > 0 && trSent.length() > 0) {
+				Set<String> origSentEntities = new HashSet<>();
+				for (String wf : pair.get(0).getElemList()) {
+					if (origEntities.contains(wf)) {
+						String val = origReverseEntityDict.get(wf);
+						if (val != null) {
+							origSentEntities.add(val);
+						} else {
+							System.out.println("ERR | origReverseEntityDict has no "+wf);
+						}
+					}
+				}
+				Set<String> trSentEntities = new HashSet<>();
+				for (String wf : pair.get(1).getElemList()) {
+					if (trEntities.contains(wf)) {
+						String val = trReverseEntityDict.get(wf);
+						if (val != null) {
+							trSentEntities.add(val);
+						} else {
+							System.out.println("ERR | trReverseEntityDict has no "+wf);
+						}
+					}
+				}
+
+				int incVal = 1;
+				if (origSentEntities.size() == 1 && trSentEntities.size() == 1) {
+					incVal = 5;
+				}
+				for(String origEnt : origSentEntities) {
+					for(String trEnt : trSentEntities) {
+						String key = origEnt+"_"+trEnt;
+						learnDictStats.put(key, incVal);
+					}
+				}
+			}
+		}
+		// remove statistically wrong translation
+		List<Map.Entry<String, Integer>> ret = EntityProcessor.removeWrongTranslations(learnDictStats);
 		return ret;
 	}
 
@@ -966,6 +1061,49 @@ public class ParallelCorpus {
 		return list;
 	}
 
+	public List<List<Sentence>> getPairSentences() {
+		List<List<Sentence>> ret = new ArrayList<>();
+		SplitPoint prevSplitPoint = null;
+		SplitPoint splitPoint = null;
+
+		for (Integer ind: mapping.keySet()) {
+			splitPoint = mapping.get(ind);
+			List<List<Sentence>> pairList = preparePairSentencesBetweenSplitPoints(prevSplitPoint, splitPoint, true);
+			List<Sentence> pair = new ArrayList<>(2);
+			if (pairList.size() > 0) {
+				pair.add(pairList.get(0).get(0));
+				pair.add(pairList.get(1).get(0));
+				ret.add(pair);
+			}
+
+			// Sentence at split point
+			pair = new ArrayList<>(2);
+			pair.add(originalCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus1));
+			pair.add(translatedCorpus.getSentenceList().get(splitPoint.sentenceIndCorpus2));
+			ret.add(pair);
+
+			prevSplitPoint = splitPoint;
+		}
+		//add last text
+		if (splitPoint != null) {
+			SplitPoint spEndOfText = new SplitPoint(originalCorpus.getSentenceList().size(),
+					translatedCorpus.getSentenceList().size(), "", "");
+			List<List<Sentence>> pairList = preparePairSentencesBetweenSplitPoints(splitPoint, spEndOfText, true);
+			List<Sentence> pair = new ArrayList<>(2);
+			if (pairList.size() > 0) {
+				pair.add(pairList.get(0).get(0));
+				pair.add(pairList.get(1).get(0));
+				ret.add(pair);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 *
+	 * @param bMarkSplitPoints - mark SplitPoints with html-bold
+	 * @return list of pair-strings (original text, translation text)
+	 */
 	public List<List<String>> getAsDoubleList(boolean bMarkSplitPoints) {
         List<List<String>> ret = new ArrayList<List<String>>();
         SplitPoint prevSplitPoint = null;
@@ -973,7 +1111,7 @@ public class ParallelCorpus {
 
         for (Integer ind: mapping.keySet()) {
             splitPoint = mapping.get(ind);
-			ArrayList<String> pairList = preparePairBetweenSplitPoints(prevSplitPoint, splitPoint);
+			List<String> pairList = preparePairBetweenSplitPoints(prevSplitPoint, splitPoint);
 			if (pairList.size() > 0) {
 				ret.add(pairList);
 			}
@@ -1008,14 +1146,14 @@ public class ParallelCorpus {
         if (splitPoint != null) {
 			SplitPoint spEndOfText = new SplitPoint(originalCorpus.getSentenceList().size(),
 					translatedCorpus.getSentenceList().size(), "", "");
-			ArrayList pairList = preparePairBetweenSplitPoints(splitPoint, spEndOfText);
+			List pairList = preparePairBetweenSplitPoints(splitPoint, spEndOfText);
             if (pairList.size() > 0) {
                 ret.add(pairList);
             }
         } else { //no split points
 			SplitPoint spEndOfText = new SplitPoint(originalCorpus.getSentenceList().size(),
 					translatedCorpus.getSentenceList().size(), "", "");
-			ArrayList pairList = preparePairBetweenSplitPoints(null, spEndOfText);
+			List pairList = preparePairBetweenSplitPoints(null, spEndOfText);
 			if (pairList.size() > 0) {
 				ret.add(pairList);
 			}
@@ -1024,8 +1162,8 @@ public class ParallelCorpus {
         return ret;
     }
 
-	private ArrayList<String> preparePairBetweenSplitPoints(SplitPoint spFrom, SplitPoint spTo) {
-		ArrayList pairList =  new ArrayList<String>(2);
+	private List<String> preparePairBetweenSplitPoints(SplitPoint spFrom, SplitPoint spTo) {
+		List<String> pairList =  new ArrayList<>(2);
 		int indFrom1 = (spFrom == null) ? 0 : spFrom.sentenceIndCorpus1+1;
 		int indTo1 = spTo.sentenceIndCorpus1;
 
@@ -1051,7 +1189,55 @@ public class ParallelCorpus {
 		return pairList;
 	}
 
-	private class SplitPoint {
+	private List<String> preparePairBetweenSplitPoints(SplitPoint spFrom, SplitPoint spTo, boolean forceOneToOne) {
+		List<String> pairList =  new ArrayList<>(2);
+		List<List<Sentence>> sentsPair = preparePairSentencesBetweenSplitPoints(spFrom, spTo, forceOneToOne);
+		if (sentsPair.size() == 2) {
+			//original text
+			final List<String> origSents = new ArrayList<>();
+			sentsPair.get(0).forEach(s->origSents.add(s.getContent()));
+			pairList.add(String.join(IOUtil.ln, origSents));
+			//translation
+			final List<String> trSents = new ArrayList<>();
+			sentsPair.get(1).forEach(s->trSents.add(s.getContent()));
+			pairList.add(String.join(IOUtil.ln, trSents));
+		}
+		return  pairList;
+	}
+
+	private List<List<Sentence>> preparePairSentencesBetweenSplitPoints(SplitPoint spFrom, SplitPoint spTo, boolean forceOneToOne) {
+		List<List<Sentence>> pairList =  new ArrayList<>(2);
+		int indFrom1 = (spFrom == null) ? 0 : spFrom.sentenceIndCorpus1+1;
+		int indTo1 = spTo.sentenceIndCorpus1;
+
+		int indFrom2 = (spFrom == null) ? 0 : spFrom.sentenceIndCorpus2+1;
+		int indTo2 = spTo.sentenceIndCorpus2;
+
+		if (forceOneToOne && !(indTo1 - indFrom1 == 1 && indTo2 - indFrom2 == 1)) {
+			return pairList;
+		}
+		if (indTo1 > indFrom1 || indTo2 > indFrom2) {
+			//додати блок текст-переклад якщо хоча б одна з частин непорожня
+			List<Sentence> sentList = new ArrayList<>();
+			//original text
+			for (int i = indFrom1; i < indTo1; i++) {
+				sentList.add(originalCorpus.getSentenceList().get(i));
+			}
+			pairList.add(sentList);
+
+			//translation
+			sentList = new ArrayList<>();
+			for (int i = indFrom2; i < indTo2; i++) {
+				sentList.add(translatedCorpus.getSentenceList().get(i));
+			}
+			pairList.add(sentList);
+		}
+		return pairList;
+	}
+
+
+
+	protected static class SplitPoint {
 		int sentenceIndCorpus1;
 		int sentenceIndCorpus2;
 		String splitWf1;

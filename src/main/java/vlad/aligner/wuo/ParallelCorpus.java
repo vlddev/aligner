@@ -597,7 +597,7 @@ public class ParallelCorpus {
 		return ret;
 	}
 
-	public List<Map.Entry<String, Integer>> getStatisticalEntityTranslations() {
+	public List<List<String>> getStatisticalEntityTranslations() {
 		List<String> origEntities = originalCorpus.extractEntities(EntityProcessor.getCommonWords(originalCorpus.getLang()), 3);
 		List<String> trEntities = translatedCorpus.extractEntities(EntityProcessor.getCommonWords(translatedCorpus.getLang()), 3);
 
@@ -649,7 +649,17 @@ public class ParallelCorpus {
 			}
 		}
 		// remove statistically wrong translation
-		List<Map.Entry<String, Integer>> ret = EntityProcessor.removeWrongTranslations(learnDictStats);
+		List<Map.Entry<String, Integer>> entries = EntityProcessor.removeWrongTranslations(learnDictStats);
+		// generate JSON with named entities
+		List<List<String>> ret = new ArrayList<>();
+		for (Map.Entry<String, Integer> entry : entries) {
+			String key = entry.getKey();
+			String[] str = key.split("_");
+			List<String> elem = new ArrayList<>();
+			elem.add(String.join(",", origEntityGroups.get(str[0])));
+			elem.add(String.join(",", trEntityGroups.get(str[1])));
+			ret.add(elem);
+		}
 		return ret;
 	}
 

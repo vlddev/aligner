@@ -25,14 +25,15 @@
 
 package vlad.aligner.wuo.db;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
-import vlad.aligner.wuo.TrExtractor;
-import vlad.aligner.wuo.TranslatorInterface;
-import vlad.aligner.wuo.Word;
-import vlad.aligner.wuo.WordForm;
+import vlad.aligner.wuo.*;
+import vlad.util.IOUtil;
 import vlad.util.Util;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
 
@@ -402,12 +403,12 @@ public class DbTranslator implements TranslatorInterface {
         return ret;
     }
 
-	public void storeListOfPairObjects(List<List<String>> pairList, String sFileName, boolean writeToDb, boolean writeToJson) throws Exception {
+	public void storeListOfPairObjects(ParallelCorpus pc, String sFileName, boolean writeToDb, boolean writeToJson) throws Exception {
 		if (!writeToDb && !writeToJson) return;
 		int maxSentLen = 1000;
 		File dbFileName = new File(sFileName);
 		String textName = dbFileName.getName();
-		TrExtractor trExtractor = new TrExtractor(ce);
+		TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
 		String sqlInsTxt = "INSERT INTO par_txt(name) VALUES (?) ";
 		String sql = "INSERT INTO par_sent(txt_id, en, uk, matchq) VALUES (?, ?, ?, ?) ";
 		PreparedStatement ps = null;
@@ -426,7 +427,7 @@ public class DbTranslator implements TranslatorInterface {
 			   DAO.closeStatement(ps);
 			   ps = ce.prepareStatement(sql);
 		   }
-		   for (List<String> pair : pairList) {
+		   for (List<String> pair : pc.getAsDoubleList(false)) {
 			  String enSent = Util.cleanupSentence(pair.get(0).trim());
 			  String ukSent = Util.cleanupSentence(pair.get(1).trim());
 			  if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
@@ -456,4 +457,34 @@ public class DbTranslator implements TranslatorInterface {
 		   DAO.closeStatement(ps);
 		}
   	}
+
+	public void storeParallelCorpusToJson(ParallelCorpus pc, String jsonFileName) {
+		TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
+		try (PrintWriter out = IOUtil.openFile(jsonFileName, StandardCharsets.UTF_8.name())) {
+			JSONObject jsonRoot = new JSONObject();
+			JSONArray contentList = new JSONArray();
+			List<List<String>> pairList = pc.getAsDoubleList(false);
+			for (List<String> pair : pairList) {
+				String enSent = Util.cleanupSentence(pair.get(0).trim());
+				String ukSent = Util.cleanupSentence(pair.get(1).trim());
+				if ( ukSent.length() > 0 || enSent.length() > 0) {
+					JSONObject parSentJson = trExtractor.extractTranslations(ukSent, enSent);
+					parSentJson.remove("analyse");
+					contentList.put(parSentJson);
+				}
+			}
+			jsonRoot.put("content", contentList);
+			JSONArray entitiesList = new JSONArray();
+			for(List<String> elem : pc.getStatisticalEntityTranslations()) {
+				JSONObject jsonElem = new JSONObject();
+				jsonElem.put(pc.getOriginalCorpus().getLang().getLanguage(), elem.get(0));
+				jsonElem.put(pc.getTranslatedCorpus().getLang().getLanguage(), elem.get(1));
+				entitiesList.put(jsonElem);
+			}
+			jsonRoot.put("entities", entitiesList);
+			out.println(jsonRoot.toString(2));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

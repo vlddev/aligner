@@ -176,7 +176,7 @@ public class Aligner {
 
         boolean writeDb = storeParSentInDb.length() > 0 && storeParSentInDb.equalsIgnoreCase("true");
         boolean writeJson = true;
-        translator.storeListOfPairObjects(pc.getAsDoubleList(false), sFile, writeDb, writeJson);
+        translator.storeListOfPairObjects(pc, sFile, writeDb, writeJson);
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");
@@ -256,7 +256,7 @@ public class Aligner {
     }
 
     public static void extractTr(Connection con, ParallelCorpus pc, CountHashtable<String> trStats) {
-        TrExtractor trExtractor = new TrExtractor(con);
+        TrExtractor trExtractor = new TrExtractor(con, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
         trExtractor.setTrStats(trStats);
         for (List<String> pairList : pc.getAsDoubleList(false)) {
            String enSent = pairList.get(0);

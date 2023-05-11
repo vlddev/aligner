@@ -198,7 +198,7 @@ public class AlignerBatch implements Runnable {
         IOUtil.storeString(outFile+".par.html", "utf-8", pc.getAsParHTML());
 
         boolean writeJson = false;
-        translator.storeListOfPairObjects(pc.getAsDoubleList(false), outFile, this.storeParSentInDb, writeJson);
+        translator.storeListOfPairObjects(pc, outFile, this.storeParSentInDb, writeJson);
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");

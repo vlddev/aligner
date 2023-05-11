@@ -141,7 +141,7 @@ public class Aligner implements Runnable {
         IOUtil.storeString(this.fileFrom+".par.html", "utf-8", pc.getAsParHTML());
 
         boolean writeJson = true;
-        translator.storeListOfPairObjects(pc.getAsDoubleList(false), this.fileFrom, this.storeParSentInDb, writeJson);
+        translator.storeListOfPairObjects(pc, this.fileFrom, this.storeParSentInDb, writeJson);
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");

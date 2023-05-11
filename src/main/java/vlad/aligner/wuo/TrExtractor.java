@@ -4,22 +4,22 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.json.JSONObject;
-import vlad.aligner.wuo.db.DAO;
 import vlad.aligner.wuo.db.DbTranslator;
 import vlad.util.CountHashtable;
 
 public class TrExtractor {
-   private static final Locale enLoc = new Locale("en");
-   private static final Locale ukLoc = new Locale("uk");
+   private Locale origLoc = new Locale("en");
+   private Locale trLoc = new Locale("uk");
    TranslatorInterface translator;
    CountHashtable<String> trStats;
 
-   public TrExtractor(Connection con) {
+   public TrExtractor(Connection con, Locale origLoc, Locale trLoc) {
+      this.origLoc = origLoc;
+      this.trLoc = trLoc;
       translator = new DbTranslator(con);
-      List<String> errorList = translator.checkDB(enLoc, ukLoc);
+      List<String> errorList = translator.checkDB(this.origLoc, this.trLoc);
       if (errorList != null && errorList.size() > 0) {
          for (String s : errorList) {
             System.err.println(s);
@@ -37,9 +37,9 @@ public class TrExtractor {
       this.trStats = trStats;
    }
 
-   public JSONObject extractTranslations(String ukSentStr, String enSentStr) {
-      MatchSentence ukSent = new MatchSentence(ukSentStr, ukLoc, this.translator);
-      MatchSentence enSent = new MatchSentence(enSentStr, enLoc, this.translator);
+   public JSONObject extractTranslations(String origSentStr, String trSentStr) {
+      MatchSentence ukSent = new MatchSentence(trSentStr, trLoc, this.translator);
+      MatchSentence enSent = new MatchSentence(origSentStr, origLoc, this.translator);
       for (MatchSentence.MatchWf enWf : enSent.getMatchWfList()) {
          Map<Word, List<Word>> trMap = new HashMap();
          List<Word> ukTrList = new ArrayList();
@@ -47,7 +47,7 @@ public class TrExtractor {
          for (Word enWord : enWf.bases) {
             List<Word> enWordList = new ArrayList();
             enWordList.add(enWord);
-            List<Word> trList = translator.getTranslation(enWordList, enLoc, ukLoc);
+            List<Word> trList = translator.getTranslation(enWordList, origLoc, trLoc);
             trMap.put(enWord, trList);
             for (Word ukWord : trList) {
                if (!ukTrList.contains(ukWord)) {
@@ -131,8 +131,8 @@ public class TrExtractor {
       } catch (IllegalAccessException | NoSuchFieldException e) {
          System.out.println(e.getMessage());
       }
-      jsonObject.put("en", enSentStr).put("uk", ukSentStr).put("matchq", mq);
-      jsonObject.put("analyse", new JSONObject().put("en", enInfs).put("uk", ukInfs).put("map", enUkMaps));
+      jsonObject.put(origLoc.getLanguage(), origSentStr).put(trLoc.getLanguage(), trSentStr).put("matchq", mq);
+      jsonObject.put("analyse", new JSONObject().put(origLoc.getLanguage(), enInfs).put(trLoc.getLanguage(), ukInfs).put("map", enUkMaps));
       return jsonObject;
    }
 

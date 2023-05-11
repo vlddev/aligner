@@ -257,6 +257,33 @@ public class Corpus {
         }
         return ret;
 	}
+
+	public List<String> extractEntities(List<String> commonWords, int minEntityLen) {
+		List<String> ret = new ArrayList<>();
+		CountHashtable<String> stats = new CountHashtable<String>();
+		// extract stats for words with uppercase
+		for (Sentence sent : getSentenceList()) {
+			for(String wf : sent.getElemList()) {
+				if (!wf.equals(wf.toLowerCase())) {
+					stats.add(wf);
+				}
+			}
+		}
+		//filter named entities
+		for(Map.Entry<String, Integer> entry : stats.entrySet()) {
+			String elem = entry.getKey();
+			Integer elemCount = entry.getValue();
+			if (elemCount > 1 &&
+				Character.isUpperCase(elem.charAt(0)) &&
+				elem.length() >= minEntityLen &&
+				Character.isLetterOrDigit(elem.charAt(elem.length()-1)) &&
+				!commonWords.contains(elem.toLowerCase())
+			) {
+				ret.add(elem);
+			}
+		}
+		return ret;
+	}
 	
 	public List<Sentence> getSentenceList() {
 		return sentenceList;

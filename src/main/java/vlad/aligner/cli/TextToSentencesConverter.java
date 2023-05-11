@@ -44,12 +44,10 @@ public class TextToSentencesConverter implements Runnable {
             throw new RuntimeException("Output file already exists.");
         }
         List<String> sentences;
-        switch (conversionMethod.toLowerCase()) {
-            case METHOD_STANFORD:
-                sentences = stanfordConverter(getInputFileContent());
-                break;
-            default:
-                sentences = defaultConverter(getInputFileContent());
+        if (METHOD_STANFORD.equals(conversionMethod.toLowerCase())) {
+            sentences = stanfordConverter(getInputFileContent());
+        } else {
+            sentences = defaultConverter(getInputFileContent());
         }
         // Write the sentences to a new file
         try (FileWriter writer = new FileWriter(outputFile)) {

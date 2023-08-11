@@ -42,11 +42,15 @@ public class Aligner implements Runnable {
     @Option(names = { "-lt", "--lang-to" }, description = "Language of translation text (en,de,uk)")
     String langTo = "uk";
 
-    @Option(names = { "-fmt", "--input-format" }, description = "Input file format (SPL - sentence per line; ANY - default)")
+    @Option(names = { "-fmt", "--input-format" }, description = "Input file format (SPL - sentence per line; ANY - unformatted text, default)")
     String inputFormat = Corpus.UNFORMATTED_TEXT;
 
     @Option(names = { "-o", "--output" }, description = "Output file")
     String outputFile = "out.spl";
+
+    @Option(names = { "-ofmt", "--output-format" }, description = "Output file format (par_html - HTML table with two columns, default;" +
+            " par_html_1c - HTML table with one column; )")
+    String outputFormat = ParallelCorpus.PAR_HTML;
 
     @Option(names = { "-s", "--store-par-sent" }, description = "Store aligned sentences in the DB")
     boolean storeParSentInDb = false;
@@ -133,12 +137,8 @@ public class Aligner implements Runnable {
         //dump for debugging
         //pc.dumpMapping();
 
-        //store as XML
-        //IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
-        //store as TMX
-        //IOUtil.storeString(sFile+".par.tmx", "utf-8", pc.getAsTMX());
-        //store as HTML
-        IOUtil.storeString(this.fileFrom+".par.html", "utf-8", pc.getAsParHTML());
+        //store output
+        IOUtil.storeString(this.fileFrom+"."+pc.getFormatExtention(this.outputFormat), "utf-8", pc.getFormatted(this.outputFormat));
 
         boolean writeJson = true;
         translator.storeListOfPairObjects(pc, this.fileFrom, this.storeParSentInDb, writeJson);

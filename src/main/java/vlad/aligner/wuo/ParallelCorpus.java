@@ -41,6 +41,11 @@ import java.util.regex.Pattern;
  */
 public class ParallelCorpus {
 
+    public static final String PAR_HTML = "par_html";
+    public static final String PAR_HTML_1C = "par_html_1c";
+    public static final String TMX = "tmx";
+    public static final String JSON = "json";
+
     private Corpus originalCorpus;
     private Corpus translatedCorpus;
     private String name;
@@ -810,6 +815,32 @@ public class ParallelCorpus {
         }
     }
 
+    public String getFormatted(String format) {
+        switch (format) {
+            case PAR_HTML_1C:
+                return getAsParHtml1c();
+            case TMX:
+                return getAsTMX();
+            case PAR_HTML:
+            default:
+                return getAsParHTML();
+        }
+    }
+
+    public String getFormatExtention(String format) {
+        switch (format) {
+            case PAR_HTML_1C:
+                return "1c.html";
+            case TMX:
+                return "tmx";
+            case JSON:
+                return "json";
+            case PAR_HTML:
+            default:
+                return "par.html";
+        }
+    }
+
     public String getAsParXML() {
         StringBuilder ret = new StringBuilder();
         SplitPoint prevSplitPoint = null;
@@ -1023,6 +1054,16 @@ public class ParallelCorpus {
         return ret.toString();
     }
 
+    public String getAsParHtml1c() {
+        StringBuffer ret = new StringBuffer();
+        ret.append("<html><body>");
+        ret.append("<head><link rel=\"stylesheet\" href=\"par.css\"></head>");
+        ret.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
+        ret.append(getAsHtmlTableOneColumn(getAsDoubleList(true)));
+        ret.append("</body></html>");
+        return ret.toString();
+    }
+
     public String getAsAnonymizedParHTML(Map<String, String> origReplacements, Map<String, String> translationReplacements) {
         StringBuffer ret = new StringBuffer();
         ret.append("<html><body>");
@@ -1055,6 +1096,30 @@ public class ParallelCorpus {
             ret.append(val);
             ret.append("</td></tr>");
             ret.append(IOUtil.ln);
+        }
+        ret.append("</table>");
+
+        return ret.toString();
+    }
+
+    public String getAsHtmlTableOneColumn(List<List<String>> doubleList) {
+        StringBuffer ret = new StringBuffer();
+
+        ret.append("<table>");
+        for (List<String> pairList : doubleList) {
+            ret.append("<tr><td class=\"orig\">");
+            String val = "";
+            if (pairList != null && pairList.size() > 0) {
+                val = pairList.get(0);
+            }
+            ret.append(val);
+            ret.append("</td></tr><tr>").append(IOUtil.ln);
+            ret.append("<td class=\"tr\">");
+            val = "";
+            if (pairList != null && pairList.size() > 1) {
+                val = pairList.get(1);
+            }
+            ret.append(val).append("</td></tr>").append(IOUtil.ln);
         }
         ret.append("</table>");
 

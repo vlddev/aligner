@@ -39,11 +39,14 @@ public class AlignerBatch implements Runnable {
     @Option(names = { "-d", "--data" }, description = "additional data to be loaded into memory db")
     String dataFile = "data.txt";
 
+    @Option(names = { "-l", "--libroot" }, description = "Library root folder")
     String libRoot = "";
 
     boolean storeParSentInDb = false;
 
     boolean writeProtocol = false;
+
+    boolean overwriteSpl = false;
 
     private String inMemoryDb = "jdbc:h2:mem:default;MODE=MySQL;DATABASE_TO_LOWER=TRUE"; // ;IGNORECASE=TRUE
     private String inMemoryDbScript = "aligner-script.sql";
@@ -86,6 +89,11 @@ public class AlignerBatch implements Runnable {
     }
 
     public void run() {
+        logger.info("Start AlignerBatch", dataFile);
+        logger.info("  --db-url '{}'.", this.dbUrl);
+        logger.info("  --libroot '{}'.", this.libRoot);
+        logger.info("  --input '{}'.", this.inputFile);
+        logger.info("  --data '{}'.", this.dataFile);
         try {
             if (Files.exists(Path.of(dataFile))) {
                 readData(dataFile);
@@ -109,7 +117,7 @@ public class AlignerBatch implements Runnable {
     public void alignerBatch(String inputFile) throws Exception {
         List<String> batchData = Files.readAllLines(new File(inputFile).toPath(), Charset.defaultCharset());
         for (String batchJobFile : batchData) {
-            //doSplFile(libRoot+batchJobFile);
+            doSplFile(libRoot+batchJobFile, this.overwriteSpl);
             doBatchJob(libRoot+batchJobFile);
         }
     }
@@ -141,18 +149,47 @@ public class AlignerBatch implements Runnable {
         }
     }
 
-    public void doSplFile(String batchJobFile) {
+    public void doSplFile(String batchJobFile, boolean bForceReplace) {
+        doEnSplFile(batchJobFile, bForceReplace);
+        doUkSplFile(batchJobFile, bForceReplace);
+    }
+
+    public void doUkSplFile(String batchJobFile, boolean overwriteOutput) {
         // convert uk
         TextToSentencesConverter splConverter = new TextToSentencesConverter();
-        splConverter.overwriteOutput = true;
+        splConverter.overwriteOutput = overwriteOutput;
         splConverter.inputFile = batchJobFile+"_uk.txt";
         splConverter.outputFile = batchJobFile+"_uk.spl";
         Path inFile = Path.of(splConverter.inputFile);
         if (!Files.exists(inFile)) {
-            logger.warn("From file '{}' not exists.", splConverter.inputFile);
+            logger.warn("Input file '{}' not exists.", splConverter.inputFile);
         } else {
             logger.info("Convert Txt to Spl '{}'.", batchJobFile);
-            splConverter.run();
+            try {
+                splConverter.run();
+            } catch (Exception e) {
+                logger.warn(" Warn: {}", e.getMessage());
+            }
+        }
+    }
+
+    public void doEnSplFile(String batchJobFile, boolean overwriteOutput) {
+        // convert en
+        TextToSentencesConverter splConverter = new TextToSentencesConverter();
+        splConverter.overwriteOutput = overwriteOutput;
+        splConverter.conversionMethod = "stanford";
+        splConverter.inputFile = batchJobFile+"_en.txt";
+        splConverter.outputFile = batchJobFile+"_en.spl";
+        Path inFile = Path.of(splConverter.inputFile);
+        if (!Files.exists(inFile)) {
+            logger.warn("Input file '{}' not exists.", splConverter.inputFile);
+        } else {
+            logger.info("Convert Txt to Spl '{}'.", batchJobFile);
+            try {
+                splConverter.run();
+            } catch (Exception e) {
+                logger.warn(" Warn: {}", e.getMessage());
+            }
         }
     }
 
@@ -189,7 +226,6 @@ public class AlignerBatch implements Runnable {
 
         pc.align(translator, 5, 10);
 
-        System.out.println("==== Store results ====");
         //store as XML
         //IOUtil.storeString(sFile+".par.xml", "utf-8", pc.getAsParXML());
         //store as TMX
@@ -207,6 +243,10 @@ public class AlignerBatch implements Runnable {
         System.out.println("Corpus 2: language - "+ corp2.getLang().getLanguage() +
                 ", sentences - " + corp2.getSentenceList().size());
         System.out.println("Division points - "+ pc.getCorpusPairCount());
+        System.out.println("AlignerSTA\t" + outFile
+                + "\t" + corp1.getSentenceList().size()
+                + "\t" + corp2.getSentenceList().size()
+                + "\t" + pc.getCorpusPairCount() );
         System.out.println("Done in "+ runTime + " sec.");
     }
 

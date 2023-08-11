@@ -32,7 +32,7 @@ public class SentenceReader2 {
     //code of unicode character '…' is \u2026
     private static String END_OF_SENTENCE = ".!?"+'\u2026';
     private static String[] NOT_THE_END_EN = {"Mrs.","Dr.","Mr.","Ms.","...",".."};
-    private static String[] NOT_THE_END_UK = {"хв", " тис", "див", "рр", "ст", "м", "с", "р", "с", "н", "е"};
+    private static String[] NOT_THE_END_UK = {"хв", "тис", "див", "св", "рр", "ст", "м", "с", "р", "с", "н", "е"};
 
     private StringBuffer sbText;
     private int pos = 0;

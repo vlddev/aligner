@@ -4,8 +4,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,6 +20,7 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.util.CoreMap;
 import vlad.aligner.wuo.Corpus;
 import vlad.aligner.wuo.Sentence;
+import vlad.util.IOUtil;
 
 @Command(name = "TextToSentencesConverter", version = "TextToSentencesConverter 0.5", mixinStandardHelpOptions = true)
 public class TextToSentencesConverter implements Runnable {
@@ -50,10 +52,9 @@ public class TextToSentencesConverter implements Runnable {
             sentences = defaultConverter(getInputFileContent());
         }
         // Write the sentences to a new file
-        try (FileWriter writer = new FileWriter(outputFile)) {
+        try (PrintWriter writer = IOUtil.openFile(outputFile, StandardCharsets.UTF_8.name())) {
             for(String sent : sentences) {
-                writer.write(sent);
-                writer.write("\n");
+                writer.println(sent);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

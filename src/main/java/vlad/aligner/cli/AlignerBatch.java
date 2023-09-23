@@ -11,6 +11,7 @@ import vlad.aligner.wuo.db.DbTranslator;
 import vlad.util.IOUtil;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -42,7 +43,10 @@ public class AlignerBatch implements Runnable {
     @Option(names = { "-l", "--libroot" }, description = "Library root folder")
     String libRoot = "";
 
+    String parSentFile = "parSentFile.tsv";
     boolean storeParSentInDb = false;
+    boolean storeParSentInFile = false;
+    FileWriter parSentFileWriter = null;
 
     boolean writeProtocol = false;
 
@@ -116,9 +120,17 @@ public class AlignerBatch implements Runnable {
 
     public void alignerBatch(String inputFile) throws Exception {
         List<String> batchData = Files.readAllLines(new File(inputFile).toPath(), Charset.defaultCharset());
+        if (this.storeParSentInFile) {
+            logger.info("Store all parallel sentences in '{}'.", Path.of(parSentFile).toAbsolutePath().toString());
+            this.parSentFileWriter = new FileWriter(this.parSentFile);
+        }
         for (String batchJobFile : batchData) {
             doSplFile(libRoot+batchJobFile, this.overwriteSpl);
             doBatchJob(libRoot+batchJobFile);
+        }
+        if (this.storeParSentInFile) {
+            this.parSentFileWriter.flush();
+            this.parSentFileWriter.close();
         }
     }
 
@@ -222,7 +234,7 @@ public class AlignerBatch implements Runnable {
 
         ParallelCorpus pc = new ParallelCorpus(corp1, corp2);
         pc.setName("test");
-        pc.showSentIndex = true;
+        pc.showSentIndex = false;
 
         pc.align(translator, 5, 10);
 
@@ -235,6 +247,10 @@ public class AlignerBatch implements Runnable {
 
         boolean writeJson = false;
         translator.storeListOfPairObjects(pc, outFile, this.storeParSentInDb, writeJson);
+
+        if (this.storeParSentInFile) {
+            parSentFileWriter.append(translator.getListOfPairObjectsAsTsv(pc));
+        }
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;
         System.out.println("=== Statistics ===");

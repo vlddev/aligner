@@ -139,7 +139,7 @@ public class TrExtractor {
     public void match(String ukSentStr, List<String> enSentList) {
         for (int i = 0; i < enSentList.size(); i++) {
             String enSent = enSentList.get(i);
-            JSONObject sentJson = extractTranslations(ukSentStr, enSent);
+            JSONObject sentJson = extractTranslations(enSent, ukSentStr);
             System.out.println(i+". "+sentJson.getFloat("matchq"));
         }
     }

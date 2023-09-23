@@ -265,7 +265,7 @@ public class Aligner {
            System.out.println("en:   " + enSent);
            System.out.println("uk:   " + ukSent);
            System.out.println("--------------");
-           trExtractor.extractTranslations(ukSent, enSent);
+           trExtractor.extractTranslations(enSent, ukSent);
         }
   
     }

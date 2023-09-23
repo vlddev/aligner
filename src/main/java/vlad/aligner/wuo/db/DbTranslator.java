@@ -431,7 +431,7 @@ public class DbTranslator implements TranslatorInterface {
                 String enSent = Util.cleanupSentence(pair.get(0).trim());
                 String ukSent = Util.cleanupSentence(pair.get(1).trim());
                 if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
-                    JSONObject parSentJson = trExtractor.extractTranslations(ukSent, enSent);
+                    JSONObject parSentJson = trExtractor.extractTranslations(enSent, ukSent);
                     float mq = parSentJson.getFloat("matchq");
                     if (writeToDb) {
                         ps.clearParameters();
@@ -443,7 +443,7 @@ public class DbTranslator implements TranslatorInterface {
                     }
 
                     if (writeToJson) {
-                        // TODO: use parSentJson
+                        // TODO: use JSONObject parSentJson
                         JSONObject jsonObject = new JSONObject().put("en", enSent).put("uk", ukSent).put("matchq", mq);
                         //System.out.println(jsonObject.toString(1));
                     }
@@ -458,6 +458,22 @@ public class DbTranslator implements TranslatorInterface {
         }
     }
 
+    public String getListOfPairObjectsAsTsv(ParallelCorpus pc) throws Exception {
+        int maxSentLen = 1000;
+        StringBuilder sbRet = new StringBuilder();
+        TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
+        for (List<String> pair : pc.getAsDoubleList(false)) {
+            String enSent = Util.cleanupSentence(pair.get(0).trim());
+            String ukSent = Util.cleanupSentence(pair.get(1).trim());
+            if ( (ukSent.length() > 0 || enSent.length() > 0) && ukSent.length() < maxSentLen && enSent.length() < maxSentLen) {
+                JSONObject parSentJson = trExtractor.extractTranslations(enSent, ukSent);
+                float mq = parSentJson.getFloat("matchq");
+                sbRet.append(enSent).append("\t").append(ukSent).append("\t").append(mq).append("\n");
+            }
+        }
+        return sbRet.toString();
+    }
+
     public void storeParallelCorpusToJson(ParallelCorpus pc, String jsonFileName) {
         TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
         try (PrintWriter out = IOUtil.openFile(jsonFileName, StandardCharsets.UTF_8.name())) {
@@ -468,7 +484,7 @@ public class DbTranslator implements TranslatorInterface {
                 String enSent = Util.cleanupSentence(pair.get(0).trim());
                 String ukSent = Util.cleanupSentence(pair.get(1).trim());
                 if ( ukSent.length() > 0 || enSent.length() > 0) {
-                    JSONObject parSentJson = trExtractor.extractTranslations(ukSent, enSent);
+                    JSONObject parSentJson = trExtractor.extractTranslations(enSent, ukSent);
                     parSentJson.remove("analyse");
                     contentList.put(parSentJson);
                 }

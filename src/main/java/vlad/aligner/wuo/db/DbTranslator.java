@@ -474,9 +474,9 @@ public class DbTranslator implements TranslatorInterface {
         return sbRet.toString();
     }
 
-    public void storeParallelCorpusToJson(ParallelCorpus pc, String jsonFileName) {
+    public JSONObject getParallelCorpusWithEntitiesAsJson(ParallelCorpus pc) {
         TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
-        try (PrintWriter out = IOUtil.openFile(jsonFileName, StandardCharsets.UTF_8.name())) {
+        try {
             JSONObject jsonRoot = new JSONObject();
             JSONArray contentList = new JSONArray();
             List<List<String>> pairList = pc.getAsDoubleList(false);
@@ -498,7 +498,51 @@ public class DbTranslator implements TranslatorInterface {
                 entitiesList.put(jsonElem);
             }
             jsonRoot.put("entities", entitiesList);
-            out.println(jsonRoot.toString(2));
+            return jsonRoot;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public JSONObject getAnonymizedParallelCorpusAsJson(ParallelCorpus pc) {
+        TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
+        try {
+            List<String> origEntities = new ArrayList<>();
+            List<String> trEntities = new ArrayList<>();
+            for(List<String> elem : pc.getStatisticalEntityTranslations()) {
+                // elem.get(0) - orig entities comma separated
+                // elem.get(1) - tr entities comma separated
+                origEntities.addAll(Arrays.asList(elem.get(0).split(",")));
+                trEntities.addAll(Arrays.asList(elem.get(1).split(",")));
+            }
+            JSONObject jsonRoot = new JSONObject();
+            JSONArray contentList = new JSONArray();
+            List<List<String>> pairList = pc.getAsDoubleList(false);
+            for (List<String> pair : pairList) {
+                String enSentStr = Util.cleanupSentence(pair.get(0).trim());
+                if ( enSentStr.length() > 0) {
+                    Sentence sent = new Sentence(enSentStr);
+                    sent.replaceEntities(origEntities, "ENTITY");
+                    // TODO: rewrite replaceEntities() to replace entities in both Sentence.content
+                    // and Sentence.elemList
+                    enSentStr = Util.cleanupSentence(sent.toString());
+                }
+                String ukSentStr = Util.cleanupSentence(pair.get(1).trim());
+                if ( ukSentStr.length() > 0) {
+                    Sentence sent = new Sentence(ukSentStr);
+                    sent.replaceEntities(trEntities, "ENTITY");
+                    // TODO: rewrite replaceEntities() to replace entities in both Sentence.content
+                    // and Sentence.elemList
+                    ukSentStr = Util.cleanupSentence(sent.toString());
+                }
+                if ( ukSentStr.length() > 0 || enSentStr.length() > 0) {
+                    JSONObject parSentJson = trExtractor.extractTranslations(enSentStr, ukSentStr);
+                    parSentJson.remove("analyse");
+                    contentList.put(parSentJson);
+                }
+            }
+            jsonRoot.put("content", contentList);
+            return jsonRoot;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

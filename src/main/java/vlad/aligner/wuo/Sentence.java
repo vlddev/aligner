@@ -191,6 +191,15 @@ public class Sentence {
         return sb.toString();
     }
 
+    public void replaceEntities(List<String> entities, String replacement) {
+        for (int i = 0; i < this.elemList.size(); i++) {
+            String elem = this.elemList.get(i);
+            if (entities.contains(elem)) {
+                this.elemList.set(i, replacement);
+            }
+        }
+    }
+
     public int getStartPosInText() {
         return startPosInText;
     }

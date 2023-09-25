@@ -474,6 +474,17 @@ public class DbTranslator implements TranslatorInterface {
         return sbRet.toString();
     }
 
+    public String parallelCorpusJsonToTsv(JSONObject parallelCorpusJson) {
+        int maxSentLen = 1000;
+        StringBuilder sbRet = new StringBuilder();
+        JSONArray contentList = parallelCorpusJson.getJSONArray("content");
+        for (int i = 0; i < contentList.length(); i++) {
+            JSONObject parSentJson = contentList.getJSONObject(i);
+            sbRet.append(parSentJson.get("en")).append("\t").append(parSentJson.get("uk")).append("\t").append(parSentJson.get("matchq")).append("\n");
+        }
+        return sbRet.toString();
+    }
+
     public JSONObject getParallelCorpusWithEntitiesAsJson(ParallelCorpus pc) {
         TrExtractor trExtractor = new TrExtractor(ce, pc.getOriginalCorpus().getLang(), pc.getTranslatedCorpus().getLang());
         try {

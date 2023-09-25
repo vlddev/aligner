@@ -38,7 +38,7 @@ public class Sentence {
     private Locale lang;
     private List<String> elemList = new ArrayList<String>();
     private List<String> elemListLowerCase = new ArrayList<String>();
-    private List<String> dividerList = new ArrayList<String>();
+    private List<String> delimiterList = new ArrayList<String>();
 
     public Sentence(String text) {
         content = text;
@@ -47,6 +47,34 @@ public class Sentence {
     }
 
     private void init() {
+        List<Token> tokens = SentenceParser.toTokens(content);
+        if (tokens.size() > 0) {
+            // first delimiter
+            if (!tokens.get(0).isDelimiter()) {
+                delimiterList.add("");
+            }
+            for (Token token : SentenceParser.toTokens(content)) {
+                if (token.isDelimiter()) {
+                    delimiterList.add(token.getToken());
+                } else {
+                    elemList.add(token.getToken());
+                }
+            }
+            // last delimiter
+            if (!tokens.get(tokens.size()-1).isDelimiter()) {
+                delimiterList.add("");
+            }
+            // init elemListLowerCase
+            for (String s : elemList) {
+                elemListLowerCase.add(s.toLowerCase());
+            }
+        } else {
+            delimiterList.add("");
+        }
+        contentLowerCase = content.toLowerCase();
+    }
+
+    private void initOld() {
         StringTokenizer fIn = new StringTokenizer(content, Corpus.DIVIDER_CHARS);
         if(fIn.hasMoreTokens()) {
             String strWord = "";
@@ -214,7 +242,12 @@ public class Sentence {
 
     @Override
     public String toString() {
-        return String.join(" ", elemList);
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<elemList.size(); i++) {
+            sb.append(delimiterList.get(i)).append(elemList.get(i));
+        }
+        sb.append(delimiterList.get(elemList.size()));
+        return sb.toString();
     }
 
 }

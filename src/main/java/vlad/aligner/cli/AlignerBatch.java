@@ -249,7 +249,8 @@ public class AlignerBatch implements Runnable {
         translator.storeListOfPairObjects(pc, outFile, this.storeParSentInDb, writeJson);
 
         if (this.storeParSentInFile) {
-            parSentFileWriter.append(translator.getListOfPairObjectsAsTsv(pc));
+            //parSentFileWriter.append(translator.getListOfPairObjectsAsTsv(pc));
+            parSentFileWriter.append(translator.parallelCorpusJsonToTsv(translator.getAnonymizedParallelCorpusAsJson(pc)));
         }
 
         long runTime = ((new Date()).getTime() - start.getTime())/1000;

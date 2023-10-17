@@ -25,6 +25,7 @@
 
 package vlad.aligner.wuo;
 
+import org.json.JSONObject;
 import vlad.text.StringReplacer;
 import vlad.util.CountHashtable;
 import vlad.util.IOUtil;
@@ -152,6 +153,16 @@ public class ParallelCorpus {
                 && step <= maxSplitSteps);
 
         makeMappingForEqualSubcorpus();
+    }
+
+    public JSONObject getStatsJson() {
+        JSONObject stats = new JSONObject();
+        stats.put("origLang", originalCorpus.getLang());
+        stats.put("origSentCount", originalCorpus.getSentenceList().size());
+        stats.put("trLang", translatedCorpus.getLang());
+        stats.put("trSentCount", translatedCorpus.getSentenceList().size());
+        stats.put("splitPoints", getMapping().size());
+        return stats;
     }
 
     public void makeMappingWithWordsUsedOnce(TranslatorInterface translator) {

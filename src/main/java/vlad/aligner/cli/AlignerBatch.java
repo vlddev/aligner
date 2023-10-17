@@ -1,5 +1,6 @@
 package vlad.aligner.cli;
 
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -14,6 +15,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,7 +26,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-@Command(name = "AlignerBatch", version = "AlignerBatch 1.0")
+@Command(name = "AlignerBatch", version = "AlignerBatch 1.0", mixinStandardHelpOptions = true)
 public class AlignerBatch implements Runnable {
 
     Logger logger = LoggerFactory.getLogger(AlignerBatch.class);
@@ -140,6 +142,7 @@ public class AlignerBatch implements Runnable {
         Path fileTo = Path.of(batchJobFile + "_uk.spl");
         String langTo = "uk";
         String outFile = batchJobFile + "_en_uk.spl";
+        Path jsonParFile = Path.of(outFile + ".json");
         boolean doJob = true;
         if (!Files.exists(fileFrom)) {
             logger.warn("From file '{}' not exists.", fileFrom);
@@ -147,6 +150,10 @@ public class AlignerBatch implements Runnable {
         }
         if (!Files.exists(fileTo)) {
             logger.warn("To file '{}' not exists.", fileTo);
+            doJob = false;
+        }
+        if (Files.exists(jsonParFile)) {
+            logger.warn("JSON-Par-File '{}' exists.", jsonParFile);
             doJob = false;
         }
         if (doJob) {
@@ -247,6 +254,15 @@ public class AlignerBatch implements Runnable {
 
         boolean writeJson = false;
         translator.storeListOfPairObjects(pc, outFile, this.storeParSentInDb, writeJson);
+
+        Path jsonFile = Path.of(outFile + ".json");
+        if (Files.exists(jsonFile)) {
+            logger.warn("JSON file '{}' exists.", jsonFile);
+        } else {
+            JSONObject json = translator.getParallelCorpusWithEntitiesAsJson(pc);
+            json.put("stats", pc.getStatsJson());
+            IOUtil.storeString(jsonFile.toString(), StandardCharsets.UTF_8.name(), json.toString(2));
+        }
 
         if (this.storeParSentInFile) {
             //parSentFileWriter.append(translator.getListOfPairObjectsAsTsv(pc));

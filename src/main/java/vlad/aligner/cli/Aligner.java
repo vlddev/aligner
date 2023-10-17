@@ -13,7 +13,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
 
-@Command(name = "Aligner", version = "Aligner 1.0")
+@Command(name = "Aligner", version = "Aligner 1.0", mixinStandardHelpOptions = true)
 public class Aligner implements Runnable {
 
     // TODO:  --in-memory-db  - load H2 to memory

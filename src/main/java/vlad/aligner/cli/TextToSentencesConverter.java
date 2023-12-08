@@ -21,6 +21,7 @@ import edu.stanford.nlp.util.CoreMap;
 import vlad.aligner.wuo.Corpus;
 import vlad.aligner.wuo.Sentence;
 import vlad.util.IOUtil;
+import vlad.util.Util;
 
 @Command(name = "TextToSentencesConverter", version = "TextToSentencesConverter 0.5", mixinStandardHelpOptions = true)
 public class TextToSentencesConverter implements Runnable {
@@ -104,7 +105,8 @@ public class TextToSentencesConverter implements Runnable {
 
         for (CoreMap sentence : sentences) {
             String s = sentence.toString().trim();
-            if (s.length() > 0) {
+            s = s.replace("\n", "");
+            if (s.length() > 0 && !Util.containsOnly(s, Corpus.DIVIDER_CHARS)) {
                 ret.add(s);
             }
         }

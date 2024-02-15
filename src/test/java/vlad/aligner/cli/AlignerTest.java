@@ -1,6 +1,7 @@
 package vlad.aligner.cli;
 
 import org.junit.Test;
+import vlad.Const;
 import vlad.aligner.wuo.Corpus;
 
 import java.io.PrintWriter;
@@ -14,7 +15,7 @@ public class AlignerTest {
 
     public void alignTranslations() throws Exception {
         Aligner aligner = new Aligner();
-        aligner.dbUrl = "jdbc:mariadb://localhost:3333/aligner?useUnicode=true&characterEncoding=UTF-8";
+        aligner.dbUrl = Const.MARIADB_URL;
         aligner.dbUser = "app";
         aligner.dbPassword = "app";
         String enText = Files.readString(Paths.get(getClass().getClassLoader().getResource("txt/text1_en.txt").toURI()));
@@ -25,7 +26,7 @@ public class AlignerTest {
     //@Test
     public void makeText() throws Exception {
         Aligner aligner = new Aligner();
-        aligner.dbUrl = "jdbc:mariadb://localhost:3333/aligner?useUnicode=true&characterEncoding=UTF-8";
+        aligner.dbUrl = Const.MARIADB_URL;
         aligner.dbUser = "app";
         aligner.dbPassword = "app";
         String enText = Files.readString(Paths.get(getClass().getClassLoader().getResource("txt/text1_en.txt").toURI()));
@@ -47,7 +48,7 @@ public class AlignerTest {
     //@Test
     public void makeTextSpl() throws Exception {
         Aligner aligner = new Aligner();
-        aligner.dbUrl = "jdbc:mariadb://localhost:3333/aligner?useUnicode=true&characterEncoding=UTF-8";
+        aligner.dbUrl = Const.MARIADB_URL;
         aligner.dbUser = "app";
         aligner.dbPassword = "app";
         aligner.inputFormat = Corpus.SENTENCE_PER_LINE;

@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.Assert.*;
 
@@ -23,14 +24,14 @@ public class TrExtractorTest {
     public void init() throws SQLException {
         vlad.aligner.cli.Aligner aligner = new Aligner();
         connection = DriverManager.getConnection(aligner.getDbUrl(), "", "");
-        trExtractor = new TrExtractor(connection);
+        trExtractor = new TrExtractor(connection, new Locale("en"), new Locale("uk"));
     }
 
     @Test
     public void extractTranslations() {
         String ukSent = "Дверцята ліфта стулилися, і кабіна пішла вгору.";
         String enSent = "The elevator door closed and the car lifted.";
-        JSONObject parSentJson = trExtractor.extractTranslations(ukSent, enSent);
+        JSONObject parSentJson = trExtractor.extractTranslations(enSent, ukSent);
         System.out.println(parSentJson.toString());
         Assert.assertTrue(parSentJson.has("matchq"));
     }

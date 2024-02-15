@@ -45,13 +45,6 @@ public class Aligner {
 			System.out.println("Usage: txt1 lang1 txt2 lang2");
 			System.out.println("\t or list lang1 lang2");
 		}
-//		ParallelCorpus.makeText("Anderson Poul - The Man Who Came Early.txt", new Locale("en","EN"),
-//			"Anderson Poul - The Man Who Came Early_ua.txt", new Locale("uk","UA"));
-
-//		ParallelCorpus.makeAll("E:\\translation\\par_text_pool\\par_text_list.txt",
-//		new Locale("en","EN"),
-//		new Locale("uk","UA"));
-		
 	}
 
     public static String alignTextsAsHtmlTable(String sTextFrom, Locale locFrom, String sTextTo, Locale locTo, Connection c) throws Exception {
